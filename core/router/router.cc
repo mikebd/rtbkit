@@ -1225,6 +1225,15 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     bool traceAuction = auction->id.hash() % 10 == 0;
 
+    /* trace the first 2 auctions per second in slow mode */
+    if (!traceAuction && !monitorClient.getStatus()) {
+        if ((uint32_t) slowModeLastAuction.secondsSinceEpoch()
+            == (uint32_t) now.secondsSinceEpoch() &&
+            slowModeCount < 3) {
+            traceAuction = true;
+        }
+    }
+
     AgentConfig::RequestFilterCache cache(*auction->request);
 
     auto exchangeConnector = auction->exchangeConnector;
