@@ -36,6 +36,12 @@ struct RouterRunner {
 
     float maxBidPrice;
 
+    // Force metric tracing for all auctions.  Avoid at high QPS, especially if traceAuctionMessages=true
+    bool traceAllAuctionMetrics;
+
+    // For auctions that have traceAuctionMetrics=true, emit processing messages as well
+    bool traceAuctionMessages;
+
     void doOptions(int argc, char ** argv,
                    const boost::program_options::options_description & opts
                    = boost::program_options::options_description());

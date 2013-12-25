@@ -39,21 +39,21 @@ struct AuctionResponseDescription;
 */
 
 struct Auction : public std::enable_shared_from_this<Auction> {
-    
+
     /** Callback that's called once the auction is finished. */
     typedef boost::function<void (std::shared_ptr<Auction> auction)>
         HandleAuction;
 
     Auction();
-    
+
     Auction(ExchangeConnector * exchangeConnector,
             HandleAuction handleAuction,
-            std::shared_ptr<BidRequest> request,
+            const std::shared_ptr<BidRequest> & request,
             const std::string & requestStr,
             const std::string & requestStrFormat,
             Date start,
             Date expiry);
-    
+
     ~Auction();
 
     bool isZombie;  ///< Auction was externally cancelled
@@ -67,6 +67,8 @@ struct Auction : public std::enable_shared_from_this<Auction> {
     Date inPrepro, outOfPrepro;
     Date doneAugmenting;
     Date inStartBidding;
+    bool traceMetrics;
+    bool traceMessages;
 
     Id id;
     std::shared_ptr<BidRequest>  request;
@@ -236,7 +238,7 @@ struct Auction : public std::enable_shared_from_this<Auction> {
 
     /** Return a JSON representation of the response. */
     Json::Value getResponseJson(int spotNum) const;
-    
+
     /** Return all responses as JSON. */
     Json::Value getResponsesJson() const;
 
@@ -246,6 +248,9 @@ struct Auction : public std::enable_shared_from_this<Auction> {
     const std::vector<std::vector<Response> > & getResponses() const;
 
     ExchangeConnector * exchangeConnector; ///< Exchange connector for auction
+    // TODO: exchangeConnector is not currently populated.  exchangeName is temporary.
+    // Consider converting exchangeConnector to a std::weak_ptr<>
+    std::string exchangeName;
     HandleAuction handleAuction;   ///< Callback for when auction is finished
 
     struct Data {
@@ -266,7 +271,7 @@ struct Auction : public std::enable_shared_from_this<Auction> {
                 throw ML::Exception("invalid spot number");
             return !responses[spotNum].empty();
         }
-        
+
         bool hasError() const
         {
             return !error.empty();

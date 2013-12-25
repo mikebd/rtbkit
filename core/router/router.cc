@@ -60,26 +60,35 @@ toJson() const
 
 void
 AuctionDebugInfo::
-addAuctionEvent(Date timestamp, std::string type,
-                const std::vector<std::string> & args)
+addAuctionEvent(const Date & timestamp, const std::string & type)
 {
-    Message message;
-    message.timestamp = timestamp;
-    message.type = type;
-    //message.args = args;
+    AuctionDebugInfo::Message message(timestamp, type);
     messages.push_back(message);
 }
 
 void
 AuctionDebugInfo::
-addSpotEvent(const Id & spot, Date timestamp, std::string type,
+addAuctionEvent(const Date & timestamp, const std::string & type,
+                const std::vector<std::string> & args)
+{
+    AuctionDebugInfo::Message message(timestamp, type, args);
+    messages.push_back(message);
+}
+
+void
+AuctionDebugInfo::
+addSpotEvent(const Id & spotId, const Date & timestamp, const std::string & type)
+{
+    AuctionDebugInfo::Message message(timestamp, spotId, type);
+    messages.push_back(message);
+}
+
+void
+AuctionDebugInfo::
+addSpotEvent(const Id & spotId, const Date & timestamp, const std::string & type,
              const std::vector<std::string> & args)
 {
-    Message message;
-    message.spot = spot;
-    message.timestamp = timestamp;
-    message.type = type;
-    //message.args = args;
+    AuctionDebugInfo::Message message(timestamp, spotId, type, args);
     messages.push_back(message);
 }
 
@@ -87,15 +96,14 @@ void
 AuctionDebugInfo::
 dumpAuction() const
 {
-    for (unsigned i = 0;  i < messages.size();  ++i) {
-        auto & m = messages[i];
-        cerr << m.timestamp.print(6) << " " << m.spot << " " << m.type << endl;
+    for (auto & m : messages) {
+        cerr << m.timestamp.print(6) << " " << m.spotId << " " << m.type << endl;
     }
 }
 
 void
 AuctionDebugInfo::
-dumpSpot(Id spot) const
+dumpSpot(const Id & spot) const
 {
     dumpAuction();  // TODO
 }
@@ -112,7 +120,9 @@ Router(ServiceBase & parent,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       bool traceAllAuctionMetrics,
+       bool traceAuctionMessages)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -134,14 +144,15 @@ Router(ServiceBase & parent,
       logAuctions(logAuctions),
       logBids(logBids),
       logger(getZmqContext()),
-      doDebug(false),
       numAuctions(0), numBids(0), numNonEmptyBids(0),
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
       slowModeCount(0),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      traceAllAuctionMetrics(traceAllAuctionMetrics),
+      traceAuctionMessages(traceAuctionMessages)
 {
 }
 
@@ -152,7 +163,9 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       bool traceAllAuctionMetrics,
+       bool traceAuctionMessages)
     : ServiceBase(serviceName, services),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -175,14 +188,15 @@ Router(std::shared_ptr<ServiceProxies> services,
       logAuctions(logAuctions),
       logBids(logBids),
       logger(getZmqContext()),
-      doDebug(false),
       numAuctions(0), numBids(0), numNonEmptyBids(0),
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
       slowModeCount(0),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      traceAllAuctionMetrics(traceAllAuctionMetrics),
+      traceAuctionMessages(traceAuctionMessages)
 {
 }
 
@@ -697,7 +711,7 @@ shutdown()
 
 void
 Router::
-injectAuction(std::shared_ptr<Auction> auction, double lossTime)
+injectAuction(const std::string & exchangeName, std::shared_ptr<Auction> auction, double lossTime)
 {
     // cerr << "injectAuction was called!!!" << endl;
     if (!auction->handleAuction) {
@@ -709,6 +723,7 @@ injectAuction(std::shared_ptr<Auction> auction, double lossTime)
             };
     }
 
+    auction->exchangeName = exchangeName;
     auction->lossAssumed = getCurrentTime().plusSeconds(lossTime);
     onNewAuction(auction);
 }
@@ -727,23 +742,23 @@ inline std::string chomp(const std::string & s)
 std::shared_ptr<Auction>
 Router::
 injectAuction(Auction::HandleAuction onAuctionFinished,
-              std::shared_ptr<BidRequest> request,
+              const std::shared_ptr<BidRequest> & request,
               const std::string & requestStr,
               const std::string & requestStrFormat,
               double startTime,
               double expiryTime,
               double lossTime)
 {
-    std::shared_ptr<Auction> auction
-        (new Auction(nullptr,
-                     onAuctionFinished,
-                     request,
-                     chomp(requestStr),
-                     requestStrFormat,
-                     Date::fromSecondsSinceEpoch(startTime),
-                     Date::fromSecondsSinceEpoch(expiryTime)));
+    auto auction = std::make_shared<Auction>(
+        nullptr,
+        onAuctionFinished,
+        request,
+        chomp(requestStr),
+        requestStrFormat,
+        Date::fromSecondsSinceEpoch(startTime),
+        Date::fromSecondsSinceEpoch(expiryTime));
 
-    injectAuction(auction, lossTime);
+    injectAuction("", auction, lossTime);
 
     return auction;
 }
@@ -1022,7 +1037,7 @@ checkExpiredAuctions()
         auto onExpiredInFlight = [&] (const Id & auctionId,
                                       const AuctionInfo & auctionInfo)
             {
-                this->debugAuction(auctionId, "EXPIRED", {});
+                this->debugAuction(auctionId, "EXPIRED");
 
                 // Tell any remaining bidders that it's too late...
                 for (auto it = auctionInfo.bidders.begin(),
@@ -1067,11 +1082,11 @@ checkExpiredAuctions()
 #endif
 
                 // end the auction when it expires in case we're waiting on dead agents
-        if(!auctionInfo.auction->getResponses().empty()) {
+                if(!auctionInfo.auction->getResponses().empty()) {
                     if(!auctionInfo.auction->finish()) {
-                this->recordHit("tooLateToFinish");
-            }
-        }
+                        this->recordHit("tooLateToFinish");
+                    }
+                }
 
                 return Date();
             };
@@ -1084,7 +1099,7 @@ checkExpiredAuctions()
         blacklist.doExpiries();
     }
 
-    if (doDebug) {
+    if (traceAuctionMessages) {
         RouterProfiler profiler(dutyCycleCurrent.nsExpireDebug);
         expireDebugInfo();
     }
@@ -1186,6 +1201,14 @@ augmentAuction(const std::shared_ptr<AugmentationInfo> & info)
                              onDoneAugmenting);
 }
 
+#define VERBOSE_TRACE_AUCTION_PREPROCESS(message) \
+    if (traceAuctionMessages) \
+        cerr << "auction=" << auctionId << ", preprocess=" #message << endl;
+
+#define VERBOSE_TRACE_AUCTION_PREPROCESS_AGENT(agent, message) \
+    if (traceAuctionMessages) \
+        cerr << "auction=" << auctionId << ", agent=" << (agent) << ", preprocess=" #message << endl;
+
 std::shared_ptr<AugmentationInfo>
 Router::
 preprocessAuction(const std::shared_ptr<Auction> & auction)
@@ -1200,12 +1223,20 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
             = Date::now().plusSeconds(secondsUntilLossAssumed_);
     Date lossTimeout = auction->lossAssumed;
 
-    //cerr << "AUCTION " << auction->id << " " << auction->requestStr << endl;
+    const bool traceAuctionMetrics = auction->traceMetrics;
+    const bool traceAuctionMessages = auction->traceMessages;
 
-    //cerr << "url = " << auction->request->url << endl;
+    const auto & auctionId = auction->id;
+
+    if (traceAuctionMessages) {
+        cerr << "auction=" << auctionId << ", exchange=" << auction->exchangeName << endl;
+        cerr << "auction=" << auctionId << ", request=" << auction->requestStr << endl;
+        cerr << "auction=" << auctionId << ", url=" << auction->request->url << endl;
+    }
 
     if (auction->tooLate()) {
         recordHit("tooLateBeforeRouting");
+        VERBOSE_TRACE_AUCTION_PREPROCESS(too-late)
         //inFlight.erase(auctionId);
         return std::shared_ptr<AugmentationInfo>();
     }
@@ -1223,31 +1254,19 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    bool traceAuction = auction->id.hash() % 10 == 0;
-
-    /* trace the first 2 auctions per second in slow mode */
-    if (!traceAuction && !monitorClient.getStatus()) {
-        if ((uint32_t) slowModeLastAuction.secondsSinceEpoch()
-            == (uint32_t) now.secondsSinceEpoch() &&
-            slowModeCount < 3) {
-            traceAuction = true;
-        }
-    }
-
     AgentConfig::RequestFilterCache cache(*auction->request);
 
     auto exchangeConnector = auction->exchangeConnector;
 
-
     auto doFilterStat = [&] (const AgentConfig& config, const char * reason) {
-        if (!traceAuction) return;
+        if (!traceAuctionMetrics) return;
 
         this->recordHit("accounts.%s.filter.%s",
                 config.account.toString('.'),
                 reason);
     };
 
-    if (traceAuction) {
+    if (traceAuctionMetrics) {
         forEachAgent([&] (const AgentInfoEntry& info) {
                     ML::atomic_inc(info.stats->intoFilters);
                     doFilterStat(*info.config, "intoStaticFilters");
@@ -1258,17 +1277,20 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
     auto biddableConfigs = filters.filter(*auction->request, exchangeConnector);
 
     auto checkAgent = [&] (
+            const std::string & name,
             const AgentConfig & config,
             const AgentStatus & status,
             AgentStats & stats)
         {
             if (status.dead || status.lastHeartbeat.secondsSince(now) > 2.0) {
                 doFilterStat(config, "static.agentAppearsDead");
+                VERBOSE_TRACE_AUCTION_PREPROCESS_AGENT(name, dead-agent)
                 return false;
             }
 
             if (status.numBidsInFlight >= config.maxInFlight) {
                 doFilterStat(config, "static.earlyTooManyInFlight");
+                VERBOSE_TRACE_AUCTION_PREPROCESS_AGENT(name, too-many-in-flight)
                 return false;
             }
 
@@ -1278,6 +1300,7 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
             {
                 ML::atomic_inc(stats.notEnoughTime);
                 doFilterStat(config, "static.notEnoughTime");
+                VERBOSE_TRACE_AUCTION_PREPROCESS_AGENT(name, not-enough-time)
                 return false;
             }
 
@@ -1286,7 +1309,7 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     for (const auto& entry : biddableConfigs) {
         if (entry.biddableSpots.empty()) continue;
-        if (!checkAgent(*entry.config, *entry.status, *entry.stats)) continue;
+        if (!checkAgent(entry.name, *entry.config, *entry.status, *entry.stats)) continue;
 
         ML::atomic_inc(entry.stats->passedStaticFilters);
         doFilterStat(*entry.config, "passedStaticFilters");
@@ -1320,6 +1343,10 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
             if (val > bidProbability) {
                 for (unsigned i = 0;  i < it->second.size();  ++i)
                     ML::atomic_inc(it->second[i].stats->skippedBidProbability);
+                if (traceAuctionMessages)
+                    cerr << "auction=" << auctionId << ", agent-group=" << it->first
+                        << ", preprocess=bid-probability-miss, calculation="
+                        << val << ">" << bidProbability << endl;
                 continue;
             }
         }
@@ -1336,7 +1363,8 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
             recordHit("tooLateToFinish");
         }
 
-        //cerr << "no valid groups " << endl;
+        VERBOSE_TRACE_AUCTION_PREPROCESS(no-valid-agent-group)
+
         return std::shared_ptr<AugmentationInfo>();
     }
 
@@ -1344,9 +1372,12 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
     info->potentialGroups.swap(validGroups);
 
     auction->outOfPrepro = Date::now();
+    const auto preproMillis = auction->outOfPrepro.secondsSince(auction->inPrepro) * 1000.0;
 
-    recordOutcome(auction->outOfPrepro.secondsSince(auction->inPrepro) * 1000.0,
-                  "preprocessAuctionTimeMs");
+    recordOutcome(preproMillis, "preprocessAuctionTimeMs");
+
+    if (traceAuctionMessages)
+        cerr << "auction=" << auctionId << ", preprocess=passed, runtime-millis=" << preproMillis << endl;
 
     return info;
 }
@@ -1368,8 +1399,19 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
     RouterProfiler profiler(dutyCycleCurrent.nsStartBidding);
 
     try {
-        Id auctionId = augInfo->auction->id;
+        auto auction = augInfo->auction;
+
+        const auto & auctionId = auction->id;
+
+        const bool traceAuctionMetrics = auction->traceMetrics;
+        const bool traceAuctionMessages = auction->traceMessages;
+
+        if (traceAuctionMessages)
+            cerr << "doStartBidding " << auctionId << endl;
+
         if (inFlight.count(auctionId)) {
+            if (traceAuctionMessages)
+                cerr << "auction=" << auctionId << ", start=already-in-progress" << endl;
             throwException("doStartBidding.alreadyInFlight",
                            "auction with ID %s already in progress",
                            auctionId.toString().c_str());
@@ -1382,13 +1424,10 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         }
 #endif
 
-        //cerr << "doStartBidding " << auctionId << endl;
-
         auto groupAgents = augInfo->potentialGroups;
 
-        AuctionInfo & auctionInfo = addAuction(augInfo->auction,
+        AuctionInfo & auctionInfo = addAuction(auction,
                                                augInfo->lossTimeout);
-        auto auction = augInfo->auction;
 
         Date now = Date::now();
 
@@ -1396,8 +1435,6 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
         double timeLeftMs = auction->timeAvailable(now) * 1000.0;
         double timeUsedMs = auction->timeUsed(now) * 1000.0;
-
-        bool traceAuction = auction->id.hash() % 10 == 0;
 
         const auto& augList = augInfo->auction->augmentations;
 
@@ -1416,7 +1453,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
                 auto doFilterStat = [&] (const char * reason)
                     {
-                        if (!traceAuction) return;
+                        if (!traceAuctionMetrics) return;
 
                         this->recordHit("accounts.%s.filter.%s",
                                         config.account.toString('.'),
@@ -1425,7 +1462,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
                 auto doFilterMetric = [&] (const char * reason, float val)
                     {
-                        if (!traceAuction) return;
+                        if (!traceAuctionMetrics) return;
 
                         this->recordOutcome(val, "accounts.%s.filter.%s",
                                             config.account.toString('.'),
@@ -1635,7 +1672,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             }
         }
 
-        debugAuction(auctionId, "AUCTION");
+        debugAuction(auction, "AUCTION");
     } catch (const std::exception & exc) {
         cerr << "warning: auction threw exception: " << exc.what() << endl;
         if (augInfo)
@@ -1776,6 +1813,8 @@ doBid(const std::vector<std::string> & message)
     doProfileEvent(4, "account");
 
     AuctionInfo & auctionInfo = it->second;
+    Auction & auction = * auctionInfo.auction;
+    const bool traceAuctionMessages = auction.traceMessages;
 
     auto biddersIt = auctionInfo.bidders.find(agent);
     if (biddersIt == auctionInfo.bidders.end()) {
@@ -1951,12 +1990,12 @@ doBid(const std::vector<std::string> & message)
             continue;
         }
 
-	recordCount(bid.price.value, "cummulatedBidPrice");
-	recordCount(price.value, "cummulatedAuthorizedPrice");
+        recordCount(bid.price.value, "cummulatedBidPrice");
+        recordCount(price.value, "cummulatedAuthorizedPrice");
 
         doProfileEvent(6, "banker");
 
-        if (doDebug)
+        if (traceAuctionMessages)
             this->debugSpot(auctionId, imp[spotIndex].id,
                     ML::format("BID %s %s %f",
                             auctionKey.c_str(),
@@ -1993,7 +2032,7 @@ doBid(const std::vector<std::string> & message)
 
         string msg = Auction::Response::print(localResult);
 
-        if (doDebug)
+        if (traceAuctionMessages)
             this->debugSpot(auctionId, imp[spotIndex].id,
                     ML::format("BID %s %s",
                             auctionKey.c_str(), msg.c_str()));
@@ -2139,7 +2178,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
     const std::vector<std::vector<Auction::Response> > & allResponses
         = auction->getResponses();
 
-    if (doDebug)
+    if (auction->traceMessages)
         debugAuction(auctionId, ML::format("SUBMITTED %d slots",
                                            (int)allResponses.size()),
                      {});
@@ -2156,7 +2195,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
         const std::vector<Auction::Response> & responses
             = allResponses[spotNum];
 
-        if (doDebug)
+        if (auction->traceMessages)
             debugSpot(auctionId, spotId,
                       ML::format("has %zd bids", responses.size()));
 
@@ -2230,7 +2269,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
                                "unknown auction local status");
             };
 
-            if (doDebug)
+            if (auction->traceMessages)
                 debugSpot(auctionId, spotId,
                           ML::format("%s %s",
                                      msg.c_str(),
@@ -2291,7 +2330,7 @@ reduceUrl(const Url & url)
 
 void
 Router::
-onNewAuction(std::shared_ptr<Auction> auction)
+onNewAuction(const std::shared_ptr<Auction> & auction)
 {
     if (!monitorClient.getStatus()) {
         Date now = Date::now();
@@ -2306,15 +2345,24 @@ onNewAuction(std::shared_ptr<Auction> auction)
             slowModeCount++;
         }
 
+        /* trace the first 2 auctions per second in slow mode */
+        if (slowModeCount < 3)
+            auction->traceMetrics = true;
+
         if (slowModeCount > 100) {
             /* we only let the first 100 auctions take place each second */
             recordHit("monitor.ignoredAuctions");
+            if (traceAuctionMessages)
+                cerr << "slow mode limit" << endl;
             auction->finish();
             return;
         }
     }
 
     //cerr << "AUCTION GOT THROUGH" << endl;
+
+    if ((! auction->traceMetrics) && (traceAllAuctionMetrics || auction->id.hash() % 10 == 0))
+        auction->traceMetrics = true;
 
     if (logAuctions)
         // Send AUCTION to logger
@@ -2753,28 +2801,104 @@ throwException(const std::string & key, const std::string & fmt, ...)
 
 void
 Router::
-debugAuctionImpl(const Id & auction, const std::string & type,
+debugAuctionImpl(const std::shared_ptr<Auction> & auction, const std::string & type)
+{
+    Date now = Date::now();
+    boost::unique_lock<ML::Spinlock> guard(debugLock);
+    AuctionDebugInfo & entry
+        = debugInfo.access(auction->id, now.plusSeconds(30.0));
+
+    entry.auction = auction;
+    entry.addAuctionEvent(now, type);
+
+    if (auction->traceMessages)
+        cerr << "auction=" << auction->id << ", message=" << type << endl;
+}
+
+void
+Router::
+debugAuctionImpl(const std::shared_ptr<Auction> & auction, const std::string & type,
                  const std::vector<std::string> & args)
 {
     Date now = Date::now();
     boost::unique_lock<ML::Spinlock> guard(debugLock);
     AuctionDebugInfo & entry
-        = debugInfo.access(auction, now.plusSeconds(30.0));
+        = debugInfo.access(auction->id, now.plusSeconds(30.0));
 
+    entry.auction = auction;
     entry.addAuctionEvent(now, type, args);
+
+    // TODO: Add args to the verbose trace output
+    if (auction->traceMessages)
+        cerr << "auction=" << auction->id << ", message=" << type << endl;
 }
 
 void
 Router::
-debugSpotImpl(const Id & auction, const Id & spot, const std::string & type,
+debugAuctionImpl(const Id & auctionId, const std::string & type)
+{
+    Date now = Date::now();
+    boost::unique_lock<ML::Spinlock> guard(debugLock);
+    AuctionDebugInfo & entry
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
+
+    entry.addAuctionEvent(now, type);
+
+    const auto & auction = entry.auction.lock();
+    if (auction && auction->traceMessages)
+        cerr << "auction=" << auction->id << ", message=" << type << endl;
+}
+
+void
+Router::
+debugAuctionImpl(const Id & auctionId, const std::string & type,
+                 const std::vector<std::string> & args)
+{
+    Date now = Date::now();
+    boost::unique_lock<ML::Spinlock> guard(debugLock);
+    AuctionDebugInfo & entry
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
+
+    entry.addAuctionEvent(now, type, args);
+
+    // TODO: Add args to the verbose trace output
+    const auto & auction = entry.auction.lock();
+    if (auction && auction->traceMessages)
+        cerr << "auction=" << auction->id << ", message=" << type << endl;
+}
+
+void
+Router::
+debugSpotImpl(const Id & auctionId, const Id & spotId, const std::string & type)
+{
+    Date now = Date::now();
+    boost::unique_lock<ML::Spinlock> guard(debugLock);
+    AuctionDebugInfo & entry
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
+
+    entry.addSpotEvent(spotId, now, type);
+
+    const auto & auction = entry.auction.lock();
+    if (auction && auction->traceMessages)
+        cerr << "auction=" << auction->id << ", spot=" << spotId << ", message=" << type << endl;
+}
+
+void
+Router::
+debugSpotImpl(const Id & auctionId, const Id & spotId, const std::string & type,
               const std::vector<std::string> & args)
 {
     Date now = Date::now();
     boost::unique_lock<ML::Spinlock> guard(debugLock);
     AuctionDebugInfo & entry
-        = debugInfo.access(auction, now.plusSeconds(30.0));
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
 
-    entry.addSpotEvent(spot, now, type, args);
+    entry.addSpotEvent(spotId, now, type, args);
+
+    // TODO: Add args to the verbose trace output
+    const auto & auction = entry.auction.lock();
+    if (auction && auction->traceMessages)
+        cerr << "auction=" << auction->id << ", spot=" << spotId << ", message=" << type << endl;
 }
 
 void

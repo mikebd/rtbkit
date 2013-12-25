@@ -74,20 +74,33 @@ struct AllAgentInfo : public std::vector<AgentInfoEntry> {
 /*****************************************************************************/
 
 struct AuctionDebugInfo {
-    void addAuctionEvent(Date date, std::string type,
+    void addAuctionEvent(const Date & date, const std::string & type);
+    void addAuctionEvent(const Date & date, const std::string & type,
                          const std::vector<std::string> & args);
-    void addSpotEvent(const Id & spot, Date date, std::string type,
+    void addSpotEvent(const Id & spotId, const Date & date, const std::string & type);
+    void addSpotEvent(const Id & spotId, const Date & date, const std::string & type,
                       const std::vector<std::string> & args);
     void dumpAuction() const;
-    void dumpSpot(Id spot) const;
+    void dumpSpot(const Id & spotId) const;
 
     struct Message {
+        Message(const Date & date, const std::string & type) :
+                timestamp{timestamp}, type{type} {}
+        Message(const Date & date, const std::string & type,
+                const std::vector<std::string> & args) : timestamp{timestamp},
+                spotId{spotId}, type{type}, args{args} {}
+        Message(const Date & date, const Id & spotId, const std::string & type) :
+                timestamp{timestamp}, spotId{spotId}, type{type} {}
+        Message(const Date & date, const Id & spotId, const std::string & type,
+                const std::vector<std::string> & args) : timestamp{timestamp},
+                spotId{spotId}, type{type}, args{args} {}
         Date timestamp;
-        Id spot;
+        Id spotId;
         std::string type;
         std::vector<std::string> args;
     };
 
+    std::weak_ptr<Auction> auction;
     std::vector<Message> messages;
 };
 
@@ -106,7 +119,9 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
-           Amount maxBidAmount = USD_CPM(200));
+           Amount maxBidAmount = USD_CPM(200),
+           bool traceAllAuctionMetrics = false,
+           bool traceAuctionMessages = false);
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
            const std::string & serviceName = "router",
@@ -114,7 +129,9 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
-           Amount maxBidAmount = USD_CPM(200));
+           Amount maxBidAmount = USD_CPM(200),
+           bool traceAllAuctionMetrics = false,
+           bool traceAuctionMessages = false);
 
     ~Router();
 
@@ -162,7 +179,7 @@ struct Router : public ServiceBase,
 
     /** How many things (auctions, etc) are non-idle? */
     virtual size_t numNonIdle() const;
-    
+
     virtual void shutdown();
 
     /** Iterate exchanges */
@@ -183,8 +200,11 @@ struct Router : public ServiceBase,
     */
     void connectExchange(ExchangeConnector & exchange)
     {
-        exchange.onNewAuction  = [=] (std::shared_ptr<Auction> a) { this->injectAuction(a, secondsUntilLossAssumed_); };
-        exchange.onAuctionDone = [=] (std::shared_ptr<Auction> a) { this->onAuctionDone(a); };
+        exchange.onNewAuction  = [&] (const std::shared_ptr<Auction> & a) {
+            const std::string exchangeName = exchange.exchangeName();
+            this->injectAuction(exchangeName, a, secondsUntilLossAssumed_); };
+        exchange.onAuctionDone = [&] (const std::shared_ptr<Auction> & a) {
+            this->onAuctionDone(a); };
     }
 
     /** Register the exchange with the router and make it take ownership of it */
@@ -213,7 +233,7 @@ struct Router : public ServiceBase,
         exchanges.emplace_back(ML::make_unowned_std_sp(exchange));
         connectExchange(exchange);
     }
-    
+
     /** Register the exchange */
     void addExchange(std::unique_ptr<ExchangeConnector> && exchange)
     {
@@ -251,15 +271,14 @@ struct Router : public ServiceBase,
                    then secondsSinceLossAssumed will be added to
                    the current time and that value used.
     */
-    void injectAuction(std::shared_ptr<Auction> auction,
+    void injectAuction(const std::string & exchangeName,
+                       std::shared_ptr<Auction> auction,
                        double lossTime = INFINITY);
-    
+
     /** Inject an auction into the router given its components.
-        
+
         onAuctionFinished: this is the callback that will be called once
                            the auction is finished
-        id:                string ID to represent the auction.  Must be
-                           globally unique for the router.
         request:           JSON string with the bid request
         startTime:         time at which the auction starts; if empty the
                            current time will be used
@@ -282,7 +301,7 @@ struct Router : public ServiceBase,
     */
     std::shared_ptr<Auction>
     injectAuction(Auction::HandleAuction onAuctionFinished,
-                  std::shared_ptr<BidRequest> request,
+                  const std::shared_ptr<BidRequest> & request,
                   const std::string & requestStr,
                   const std::string & requestStrFormat,
                   double startTime = 0.0,
@@ -323,10 +342,10 @@ struct Router : public ServiceBase,
     /** Return information about all agents bidding on the given
         account. */
     Json::Value getAccountInfo(const AccountKey & account) const;
-    
+
     /** Multiplier for the bid probability of all agents. */
     void setGlobalBidProbability(double val) { globalBidProbability = val; }
-    
+
     /** Proportion of bids that should be rejected with an arbitrary 
         error.
     */
@@ -470,7 +489,7 @@ public:
     void doStats(const std::vector<std::string> & message);
 
     /** We got a new auction. */
-    void onNewAuction(std::shared_ptr<Auction> auction);
+    void onNewAuction(const std::shared_ptr<Auction> & auction);
 
     /** An auction finished. */
     void onAuctionDone(std::shared_ptr<Auction> auction);
@@ -518,7 +537,7 @@ public:
                          const std::string & bidData = "",
                          const Json::Value & metadata = Json::Value(),
                          const std::string & augmentationsStr = "");
-                         
+
 
     mutable Lock lock;
 
@@ -695,43 +714,77 @@ public:
     /* DEBUGGING                                                             */
     /*************************************************************************/
 
-    void debugAuction(const Id & auction, const std::string & type,
-                      const std::vector<std::string> & args
-                      = std::vector<std::string>())
+    /** The first debugAuction() call for an auction should use this to capture the auction reference */
+    void debugAuction(const std::shared_ptr<Auction> & auction, const std::string & type)
     {
-        if (JML_LIKELY(!doDebug)) return;
+        if (JML_LIKELY(!traceAuctionMessages)) return;
+        debugAuctionImpl(auction, type);
+    }
+
+    /** The first debugAuction() call for an auction should use this to capture the auction reference */
+    void debugAuction(const std::shared_ptr<Auction> & auction, const std::string & type,
+                      const std::vector<std::string> & args)
+    {
+        if (JML_LIKELY(!traceAuctionMessages)) return;
         debugAuctionImpl(auction, type, args);
     }
 
-    void debugAuctionImpl(const Id & auction, const std::string & type,
-                          const std::vector<std::string> & args);
-
-    void debugSpot(const Id & auction,
-                   const Id & spot,
-                   const std::string & type,
-                   const std::vector<std::string> & args
-                       = std::vector<std::string>())
+    /** Subsequent debugAuction() calls for an auction should use this */
+    void debugAuction(const Id & auctionId, const std::string & type)
     {
-        if (JML_LIKELY(!doDebug)) return;
-        debugSpotImpl(auction, spot, type, args);
+        if (JML_LIKELY(!traceAuctionMessages)) return;
+        debugAuctionImpl(auctionId, type);
     }
 
-    void debugSpotImpl(const Id & auction,
-                       const Id & spot,
+    /** Subsequent debugAuction() calls for an auction should use this */
+    void debugAuction(const Id & auctionId, const std::string & type,
+                      const std::vector<std::string> & args)
+    {
+        if (JML_LIKELY(!traceAuctionMessages)) return;
+        debugAuctionImpl(auctionId, type, args);
+    }
+
+    void debugAuctionImpl(const std::shared_ptr<Auction> & auction, const std::string & type);
+    void debugAuctionImpl(const std::shared_ptr<Auction> & auction, const std::string & type,
+                          const std::vector<std::string> & args);
+    void debugAuctionImpl(const Id & auctionId, const std::string & type);
+    void debugAuctionImpl(const Id & auctionId, const std::string & type,
+                          const std::vector<std::string> & args);
+
+    void debugSpot(const Id & auctionId,
+                   const Id & spotId,
+                   const std::string & type)
+    {
+        if (JML_LIKELY(!traceAuctionMessages)) return;
+        debugSpotImpl(auctionId, spotId, type);
+    }
+
+    void debugSpot(const Id & auctionId,
+                   const Id & spotId,
+                   const std::string & type,
+                   const std::vector<std::string> & args)
+    {
+        if (JML_LIKELY(!traceAuctionMessages)) return;
+        debugSpotImpl(auctionId, spotId, type, args);
+    }
+
+    void debugSpotImpl(const Id & auctionId,
+                       const Id & spotId,
+                       const std::string & type);
+
+    void debugSpotImpl(const Id & auctionId,
+                       const Id & spotId,
                        const std::string & type,
                        const std::vector<std::string> & args);
 
     void expireDebugInfo();
 
-    void dumpAuction(const Id & auction) const;
-    void dumpSpot(const Id & auction, const Id & spot) const;
+    void dumpAuction(const Id & auctionId) const;
+    void dumpSpot(const Id & auctionId, const Id & spotId) const;
 
     Date getCurrentTime() const { return Date::now(); }
 
     ZmqNamedPublisher logger;
-
-    /** Debug only */
-    bool doDebug;
 
     mutable ML::Spinlock debugLock;
     TimeoutMap<Id, AuctionDebugInfo> debugInfo;
@@ -754,6 +807,13 @@ public:
     MonitorProviderClient monitorProviderClient;
 
     Amount maxBidAmount;
+
+    /** Trace metrics for all auctions, avoid at high QPS - especially 
+        with traceAuctionMessages=true */
+    bool traceAllAuctionMetrics;
+
+    /** Verbose trace of auction processing messages */
+    bool traceAuctionMessages;
 
     /* MonitorProvider interface */
     std::string getProviderClass() const;

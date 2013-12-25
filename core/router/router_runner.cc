@@ -43,7 +43,9 @@ RouterRunner() :
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
-    maxBidPrice(200)
+    maxBidPrice(200),
+    traceAllAuctionMetrics(false),
+    traceAuctionMessages(false)
 {
 }
 
@@ -67,7 +69,11 @@ doOptions(int argc, char ** argv,
         ("log-bids", value<bool>(&logBids)->zero_tokens(),
          "log bid responses")
         ("max-bid-price", value(&maxBidPrice),
-         "maximum bid price accepted by router");
+         "maximum bid price accepted by router")
+        ("trace-all-auction-metrics", value<bool>(&traceAllAuctionMetrics)->zero_tokens(),
+         "avoid at high QPS, especially if also using --trace-auction-messages")
+        ("trace-auction-messages", value<bool>(&traceAuctionMessages)->zero_tokens(),
+         "emit auction processing messages if tracing auction metrics");
 
     options_description all_opt = opts;
     all_opt
@@ -75,7 +81,7 @@ doOptions(int argc, char ** argv,
         .add(router_options);
     all_opt.add_options()
         ("help,h", "print this message");
-    
+
     variables_map vm;
     store(command_line_parser(argc, argv)
           .options(all_opt)
