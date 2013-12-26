@@ -34,10 +34,14 @@ struct RouterRunner {
     bool logAuctions;
     bool logBids;
 
+    uint16_t maxSlowModeAuctions;
+
     float maxBidPrice;
 
     // Force metric tracing for all auctions.  Avoid at high QPS, especially if traceAuctionMessages=true
     bool traceAllAuctionMetrics;
+
+    uint16_t minTraceSlowModeAuctionMetrics;
 
     // For auctions that have traceAuctionMetrics=true, emit processing messages as well
     bool traceAuctionMessages;

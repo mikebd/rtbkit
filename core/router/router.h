@@ -119,8 +119,10 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
+           uint16_t maxSlowModeAuctions = 100,
            Amount maxBidAmount = USD_CPM(200),
            bool traceAllAuctionMetrics = false,
+           uint16_t minTraceSlowModeAuctionMetrics = 2,
            bool traceAuctionMessages = false);
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
@@ -129,8 +131,10 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
+           uint16_t maxSlowModeAuctions = 100,
            Amount maxBidAmount = USD_CPM(200),
            bool traceAllAuctionMetrics = false,
+           uint16_t minTraceSlowModeAuctionMetrics = 2,
            bool traceAuctionMessages = false);
 
     ~Router();
@@ -801,6 +805,7 @@ public:
     MonitorClient monitorClient;
     Date slowModeLastAuction;
     int slowModeCount;
+    uint16_t maxSlowModeAuctions;
 
     /* MONITOR PROVIDER */
     /* Post service health status to Monitor */
@@ -811,6 +816,8 @@ public:
     /** Trace metrics for all auctions, avoid at high QPS - especially 
         with traceAuctionMessages=true */
     bool traceAllAuctionMetrics;
+
+    uint16_t minTraceSlowModeAuctionMetrics;
 
     /** Verbose trace of auction processing messages */
     bool traceAuctionMessages;

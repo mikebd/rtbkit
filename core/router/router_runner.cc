@@ -43,8 +43,10 @@ RouterRunner() :
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
+    maxSlowModeAuctions(100),
     maxBidPrice(200),
     traceAllAuctionMetrics(false),
+    minTraceSlowModeAuctionMetrics(2),
     traceAuctionMessages(false)
 {
 }
@@ -68,10 +70,14 @@ doOptions(int argc, char ** argv,
          "log auction requests")
         ("log-bids", value<bool>(&logBids)->zero_tokens(),
          "log bid responses")
+        ("max-slow-mode-auctions", value<uint16_t>(&maxSlowModeAuctions),
+         "maximum auctions per second in slow mode (0 = disabled)")
         ("max-bid-price", value(&maxBidPrice),
          "maximum bid price accepted by router")
         ("trace-all-auction-metrics", value<bool>(&traceAllAuctionMetrics)->zero_tokens(),
          "avoid at high QPS, especially if also using --trace-auction-messages")
+        ("min-trace-slow-mode-auction-metrics", value<uint16_t>(&minTraceSlowModeAuctionMetrics),
+         "minimum number of auctions to trace per second in slow mode")
         ("trace-auction-messages", value<bool>(&traceAuctionMessages)->zero_tokens(),
          "emit auction processing messages if tracing auction metrics");
 

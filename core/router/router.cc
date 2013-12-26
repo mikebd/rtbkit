@@ -120,8 +120,10 @@ Router(ServiceBase & parent,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
+       uint16_t maxSlowModeAuctions,
        Amount maxBidAmount,
        bool traceAllAuctionMetrics,
+       uint16_t minTraceSlowModeAuctionMetrics,
        bool traceAuctionMessages)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
@@ -149,9 +151,11 @@ Router(ServiceBase & parent,
       numNoBidders(0),
       monitorClient(getZmqContext()),
       slowModeCount(0),
+      maxSlowModeAuctions(maxSlowModeAuctions),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
+      minTraceSlowModeAuctionMetrics(minTraceSlowModeAuctionMetrics),
       traceAuctionMessages(traceAuctionMessages)
 {
 }
@@ -163,8 +167,10 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
+       uint16_t maxSlowModeAuctions,
        Amount maxBidAmount,
        bool traceAllAuctionMetrics,
+       uint16_t minTraceSlowModeAuctionMetrics,
        bool traceAuctionMessages)
     : ServiceBase(serviceName, services),
       shutdown_(false),
@@ -193,9 +199,11 @@ Router(std::shared_ptr<ServiceProxies> services,
       numNoBidders(0),
       monitorClient(getZmqContext()),
       slowModeCount(0),
+      maxSlowModeAuctions(maxSlowModeAuctions),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
+      minTraceSlowModeAuctionMetrics(minTraceSlowModeAuctionMetrics),
       traceAuctionMessages(traceAuctionMessages)
 {
 }
@@ -1345,8 +1353,8 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
                     ML::atomic_inc(it->second[i].stats->skippedBidProbability);
                 if (traceAuctionMessages)
                     cerr << "auction=" << auctionId << ", agent-group=" << it->first
-                        << ", preprocess=bid-probability-miss, calculation="
-                        << val << ">" << bidProbability << endl;
+                        << ", preprocess=bid-probability-miss, global-bid-probability="
+                        << globalBidProbability << ", bid-probability=" << bidProbability << endl;
                 continue;
             }
         }
@@ -2345,15 +2353,15 @@ onNewAuction(const std::shared_ptr<Auction> & auction)
             slowModeCount++;
         }
 
-        /* trace the first 2 auctions per second in slow mode */
-        if (slowModeCount < 3)
+        /* trace the first 2 auctions per second in slow mode (configurable: --min-trace-slow-mode-auction-metrics) */
+        if (slowModeCount <= minTraceSlowModeAuctionMetrics)
             auction->traceMetrics = true;
 
-        if (slowModeCount > 100) {
-            /* we only let the first 100 auctions take place each second */
+        if (slowModeCount > maxSlowModeAuctions && maxSlowModeAuctions > 0) {
+            /* we only let the first 100 (configurable: --max-slow-mode-auctions, 0 = disabled) auctions take place each second */
             recordHit("monitor.ignoredAuctions");
-            if (traceAuctionMessages)
-                cerr << "slow mode limit" << endl;
+            if (traceAllAuctionMetrics && traceAuctionMessages)
+                cerr << "slow mode auction limit" << endl;
             auction->finish();
             return;
         }
