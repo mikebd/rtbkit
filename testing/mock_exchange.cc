@@ -50,8 +50,12 @@ start(Json::Value const & configuration) {
     for(auto i = workers.begin(), end = workers.end(); i != end; ++i) {
         auto json = *i;
         auto count = json.get("threads", 1).asInt();
+        auto start_delay = json.get("threadStartDelayMillis", 0).asInt();
 
         for(auto j = 0; j != count; ++j) {
+            if (start_delay > 0) {
+                this_thread::sleep_for(chrono::milliseconds(start_delay));
+            }
             std::cerr << "starting worker " << running << std::endl;
             ML::atomic_inc(running);
 
