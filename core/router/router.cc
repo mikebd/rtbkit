@@ -123,7 +123,7 @@ Router(ServiceBase & parent,
        uint16_t maxSlowModeAuctions,
        Amount maxBidAmount,
        bool traceAllAuctionMetrics,
-       uint16_t minTraceSlowModeAuctionMetrics,
+       uint16_t minTraceAuctionMetricsSlowMode,
        bool traceAuctionMessages)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
@@ -155,7 +155,7 @@ Router(ServiceBase & parent,
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
-      minTraceSlowModeAuctionMetrics(minTraceSlowModeAuctionMetrics),
+      minTraceAuctionMetricsSlowMode(minTraceAuctionMetricsSlowMode),
       traceAuctionMessages(traceAuctionMessages)
 {
 }
@@ -170,7 +170,7 @@ Router(std::shared_ptr<ServiceProxies> services,
        uint16_t maxSlowModeAuctions,
        Amount maxBidAmount,
        bool traceAllAuctionMetrics,
-       uint16_t minTraceSlowModeAuctionMetrics,
+       uint16_t minTraceAuctionMetricsSlowMode,
        bool traceAuctionMessages)
     : ServiceBase(serviceName, services),
       shutdown_(false),
@@ -203,7 +203,7 @@ Router(std::shared_ptr<ServiceProxies> services,
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
-      minTraceSlowModeAuctionMetrics(minTraceSlowModeAuctionMetrics),
+      minTraceAuctionMetricsSlowMode(minTraceAuctionMetricsSlowMode),
       traceAuctionMessages(traceAuctionMessages)
 {
 }
@@ -2353,8 +2353,8 @@ onNewAuction(const std::shared_ptr<Auction> & auction)
             slowModeCount++;
         }
 
-        /* trace the first 2 auctions per second in slow mode (configurable: --min-trace-slow-mode-auction-metrics) */
-        if (slowModeCount <= minTraceSlowModeAuctionMetrics)
+        /* trace the first 2 auctions per second in slow mode (configurable: --min-trace-auction-metrics-slow-mode) */
+        if (slowModeCount <= minTraceAuctionMetricsSlowMode)
             auction->traceMetrics = true;
 
         if (slowModeCount > maxSlowModeAuctions && maxSlowModeAuctions > 0) {

@@ -46,7 +46,7 @@ RouterRunner() :
     maxSlowModeAuctions(100),
     maxBidPrice(200),
     traceAllAuctionMetrics(false),
-    minTraceSlowModeAuctionMetrics(2),
+    minTraceAuctionMetricsSlowMode(2),
     traceAuctionMessages(false)
 {
 }
@@ -76,7 +76,7 @@ doOptions(int argc, char ** argv,
          "maximum bid price accepted by router")
         ("trace-all-auction-metrics", value<bool>(&traceAllAuctionMetrics)->zero_tokens(),
          "avoid at high QPS, especially if also using --trace-auction-messages")
-        ("min-trace-slow-mode-auction-metrics", value<uint16_t>(&minTraceSlowModeAuctionMetrics),
+        ("min-trace-auction-metrics-slow-mode", value<uint16_t>(&minTraceAuctionMetricsSlowMode),
          "minimum number of auctions to trace per second in slow mode")
         ("trace-auction-messages", value<bool>(&traceAuctionMessages)->zero_tokens(),
          "emit auction processing messages if tracing auction metrics");

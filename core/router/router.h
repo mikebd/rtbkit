@@ -122,7 +122,7 @@ struct Router : public ServiceBase,
            uint16_t maxSlowModeAuctions = 100,
            Amount maxBidAmount = USD_CPM(200),
            bool traceAllAuctionMetrics = false,
-           uint16_t minTraceSlowModeAuctionMetrics = 2,
+           uint16_t minTraceAuctionMetricsSlowMode = 2,
            bool traceAuctionMessages = false);
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
@@ -134,7 +134,7 @@ struct Router : public ServiceBase,
            uint16_t maxSlowModeAuctions = 100,
            Amount maxBidAmount = USD_CPM(200),
            bool traceAllAuctionMetrics = false,
-           uint16_t minTraceSlowModeAuctionMetrics = 2,
+           uint16_t minTraceAuctionMetricsSlowMode = 2,
            bool traceAuctionMessages = false);
 
     ~Router();
@@ -817,7 +817,7 @@ public:
         with traceAuctionMessages=true */
     bool traceAllAuctionMetrics;
 
-    uint16_t minTraceSlowModeAuctionMetrics;
+    uint16_t minTraceAuctionMetricsSlowMode;
 
     /** Verbose trace of auction processing messages */
     bool traceAuctionMessages;

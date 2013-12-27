@@ -41,7 +41,7 @@ struct RouterRunner {
     // Force metric tracing for all auctions.  Avoid at high QPS, especially if traceAuctionMessages=true
     bool traceAllAuctionMetrics;
 
-    uint16_t minTraceSlowModeAuctionMetrics;
+    uint16_t minTraceAuctionMetricsSlowMode;
 
     // For auctions that have traceAuctionMetrics=true, emit processing messages as well
     bool traceAuctionMessages;
