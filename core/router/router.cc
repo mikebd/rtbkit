@@ -1216,6 +1216,8 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
             = Date::now().plusSeconds(secondsUntilLossAssumed_);
     Date lossTimeout = auction->lossAssumed;
 
+    //cerr << "auction=" << auction->id << ", exchange=" << auction->exchangeName << endl;
+
     //cerr << "AUCTION " << auction->id << " " << auction->requestStr << endl;
 
     //cerr << "url = " << auction->request->url << endl;
