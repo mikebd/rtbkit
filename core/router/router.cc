@@ -140,8 +140,8 @@ Router(ServiceBase & parent,
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
-      slowModeNewAuctionCount(0),
-      slowModeAuctionBidCount(0),
+      slowModeAuctionCount(0),
+      slowModeBidCount(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount)
 {
@@ -183,8 +183,8 @@ Router(std::shared_ptr<ServiceProxies> services,
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
-      slowModeNewAuctionCount(0),
-      slowModeAuctionBidCount(0),
+      slowModeAuctionCount(0),
+      slowModeBidCount(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount)
 {
@@ -1241,16 +1241,10 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    bool traceAuction = auction->id.hash() % 10 == 0;
-
     /* trace metrics of at least the first 10 new auctions per second in slow mode */
-    if (!traceAuction && !monitorClient.getStatus()) {
-        if ((uint32_t) slowModeLastNewAuction.secondsSinceEpoch()
-            == (uint32_t) now.secondsSinceEpoch() &&
-            slowModeNewAuctionCount < 11) {
-            traceAuction = true;
-        }
-    }
+    const bool traceAuction =
+        (auction->slowMode && slowModeAuctionCount < 11) ||
+        (auction->id.hash() % 10 == 0);
 
     AgentConfig::RequestFilterCache cache(*auction->request);
 
@@ -1415,22 +1409,10 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         double timeLeftMs = auction->timeAvailable(now) * 1000.0;
         double timeUsedMs = auction->timeUsed(now) * 1000.0;
 
-        bool traceAuction = auction->id.hash() % 10 == 0;
-
-        if (!monitorClient.getStatus()) {
-            if ((uint32_t) slowModeLastAuctionBid.secondsSinceEpoch()
-                < (uint32_t) now.secondsSinceEpoch()) {
-                slowModeLastAuctionBid = now;
-                slowModeAuctionBidCount = 1;
-            }
-            else {
-                slowModeAuctionBidCount++;
-            }
-
-            /* trace metrics of at least the first 10 auction bids per second in slow mode */
-            if (slowModeAuctionBidCount < 11)
-                traceAuction = true;
-        }
+        /* trace metrics of at least the first 10 auction bids per second in slow mode */
+        const bool traceAuction =
+            (auction->slowMode && ++slowModeBidCount < 11) ||
+            (auction->id.hash() % 10 == 0);
 
         const auto& augList = augInfo->auction->augmentations;
 
@@ -2329,17 +2311,20 @@ onNewAuction(std::shared_ptr<Auction> auction)
     if (!monitorClient.getStatus()) {
         Date now = Date::now();
 
-        if ((uint32_t) slowModeLastNewAuction.secondsSinceEpoch()
+        if ((uint32_t) slowModeLastAuction.secondsSinceEpoch()
             < (uint32_t) now.secondsSinceEpoch()) {
-            slowModeLastNewAuction = now;
-            slowModeNewAuctionCount = 1;
+            slowModeLastAuction = now;
+            slowModeAuctionCount = 1;
+            slowModeBidCount = 0;
             recordHit("monitor.systemInSlowMode");
         }
         else {
-            slowModeNewAuctionCount++;
+            slowModeAuctionCount++;
         }
 
-        if (slowModeNewAuctionCount > 100) {
+        auction->slowMode = true;
+
+        if (slowModeAuctionCount > 100) {
             /* we only let the first 100 auctions take place each second */
             recordHit("monitor.ignoredAuctions");
             auction->finish();

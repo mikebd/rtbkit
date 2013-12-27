@@ -747,10 +747,9 @@ public:
     /* Client connection to the Monitor, determines if we can process bid
        requests */
     MonitorClient monitorClient;
-    Date slowModeLastNewAuction;
-    int slowModeNewAuctionCount;
-    Date slowModeLastAuctionBid;
-    int slowModeAuctionBidCount;
+    Date slowModeLastAuction;
+    int slowModeAuctionCount;
+    int slowModeBidCount;
 
     /* MONITOR PROVIDER */
     /* Post service health status to Monitor */

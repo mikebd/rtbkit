@@ -39,13 +39,13 @@ struct AuctionResponseDescription;
 */
 
 struct Auction : public std::enable_shared_from_this<Auction> {
-    
+
     /** Callback that's called once the auction is finished. */
     typedef boost::function<void (std::shared_ptr<Auction> auction)>
         HandleAuction;
 
     Auction();
-    
+
     Auction(ExchangeConnector * exchangeConnector,
             HandleAuction handleAuction,
             std::shared_ptr<BidRequest> request,
@@ -53,7 +53,7 @@ struct Auction : public std::enable_shared_from_this<Auction> {
             const std::string & requestStrFormat,
             Date start,
             Date expiry);
-    
+
     ~Auction();
 
     bool isZombie;  ///< Auction was externally cancelled
@@ -61,6 +61,8 @@ struct Auction : public std::enable_shared_from_this<Auction> {
     Date start;
     Date expiry;
     Date lossAssumed;
+
+    bool slowMode;
 
     // Debug
     Date doneParsing;
@@ -236,7 +238,7 @@ struct Auction : public std::enable_shared_from_this<Auction> {
 
     /** Return a JSON representation of the response. */
     Json::Value getResponseJson(int spotNum) const;
-    
+
     /** Return all responses as JSON. */
     Json::Value getResponsesJson() const;
 
@@ -266,7 +268,7 @@ struct Auction : public std::enable_shared_from_this<Auction> {
                 throw ML::Exception("invalid spot number");
             return !responses[spotNum].empty();
         }
-        
+
         bool hasError() const
         {
             return !error.empty();
