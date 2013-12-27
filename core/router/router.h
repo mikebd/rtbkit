@@ -162,7 +162,7 @@ struct Router : public ServiceBase,
 
     /** How many things (auctions, etc) are non-idle? */
     virtual size_t numNonIdle() const;
-    
+
     virtual void shutdown();
 
     /** Iterate exchanges */
@@ -213,7 +213,7 @@ struct Router : public ServiceBase,
         exchanges.emplace_back(ML::make_unowned_std_sp(exchange));
         connectExchange(exchange);
     }
-    
+
     /** Register the exchange */
     void addExchange(std::unique_ptr<ExchangeConnector> && exchange)
     {
@@ -253,9 +253,9 @@ struct Router : public ServiceBase,
     */
     void injectAuction(std::shared_ptr<Auction> auction,
                        double lossTime = INFINITY);
-    
+
     /** Inject an auction into the router given its components.
-        
+
         onAuctionFinished: this is the callback that will be called once
                            the auction is finished
         id:                string ID to represent the auction.  Must be
@@ -323,10 +323,10 @@ struct Router : public ServiceBase,
     /** Return information about all agents bidding on the given
         account. */
     Json::Value getAccountInfo(const AccountKey & account) const;
-    
+
     /** Multiplier for the bid probability of all agents. */
     void setGlobalBidProbability(double val) { globalBidProbability = val; }
-    
+
     /** Proportion of bids that should be rejected with an arbitrary 
         error.
     */
@@ -519,7 +519,7 @@ public:
                          const std::string & bidData = "",
                          const Json::Value & metadata = Json::Value(),
                          const std::string & augmentationsStr = "");
-                         
+
 
     mutable Lock lock;
 
@@ -747,8 +747,10 @@ public:
     /* Client connection to the Monitor, determines if we can process bid
        requests */
     MonitorClient monitorClient;
-    Date slowModeLastAuction;
-    int slowModeCount;
+    Date slowModeLastNewAuction;
+    int slowModeNewAuctionCount;
+    Date slowModeLastAuctionBid;
+    int slowModeAuctionBidCount;
 
     /* MONITOR PROVIDER */
     /* Post service health status to Monitor */
