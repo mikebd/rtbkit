@@ -708,7 +708,7 @@ shutdown()
 
 void
 Router::
-injectAuction(std::shared_ptr<Auction> auction, double lossTime)
+injectAuction(const std::string & exchangeName, std::shared_ptr<Auction> auction, double lossTime)
 {
     // cerr << "injectAuction was called!!!" << endl;
     if (!auction->handleAuction) {
@@ -720,6 +720,7 @@ injectAuction(std::shared_ptr<Auction> auction, double lossTime)
             };
     }
 
+    auction->exchangeName = exchangeName;
     auction->lossAssumed = getCurrentTime().plusSeconds(lossTime);
     onNewAuction(auction);
 }
@@ -737,7 +738,8 @@ inline std::string chomp(const std::string & s)
 
 std::shared_ptr<Auction>
 Router::
-injectAuction(Auction::HandleAuction onAuctionFinished,
+injectAuction(const std::string & exchangeName,
+              Auction::HandleAuction onAuctionFinished,
               std::shared_ptr<BidRequest> request,
               const std::string & requestStr,
               const std::string & requestStrFormat,
@@ -754,7 +756,7 @@ injectAuction(Auction::HandleAuction onAuctionFinished,
                      Date::fromSecondsSinceEpoch(startTime),
                      Date::fromSecondsSinceEpoch(expiryTime)));
 
-    injectAuction(auction, lossTime);
+    injectAuction(exchangeName, auction, lossTime);
 
     return auction;
 }
