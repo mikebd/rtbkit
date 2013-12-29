@@ -43,6 +43,7 @@ RouterRunner() :
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
+    maxSlowModeAuctions(100),
     maxBidPrice(200)
 {
 }
@@ -66,6 +67,8 @@ doOptions(int argc, char ** argv,
          "log auction requests")
         ("log-bids", value<bool>(&logBids)->zero_tokens(),
          "log bid responses")
+        ("max-slow-mode-auctions", value<uint16_t>(&maxSlowModeAuctions),
+         "maximum auctions per second considered in slow mode")
         ("max-bid-price", value(&maxBidPrice),
          "maximum bid price accepted by router");
 
@@ -75,7 +78,7 @@ doOptions(int argc, char ** argv,
         .add(router_options);
     all_opt.add_options()
         ("help,h", "print this message");
-    
+
     variables_map vm;
     store(command_line_parser(argc, argv)
           .options(all_opt)
@@ -101,6 +104,7 @@ init()
 
     router = std::make_shared<Router>(proxies, serviceName, lossSeconds,
                                       true, logAuctions, logBids,
+                                      maxSlowModeAuctions,
                                       USD_CPM(maxBidPrice));
     router->init();
 

@@ -106,6 +106,7 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
+           uint16_t maxSlowModeAuctions = 100,
            Amount maxBidAmount = USD_CPM(200));
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
@@ -114,6 +115,7 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
+           uint16_t maxSlowModeAuctions = 100,
            Amount maxBidAmount = USD_CPM(200));
 
     ~Router();
@@ -749,6 +751,7 @@ public:
     MonitorClient monitorClient;
     Date slowModeLastAuction;
     int slowModeCount;
+    uint16_t maxSlowModeAuctions;
 
     /* MONITOR PROVIDER */
     /* Post service health status to Monitor */

@@ -34,6 +34,8 @@ struct RouterRunner {
     bool logAuctions;
     bool logBids;
 
+    uint16_t maxSlowModeAuctions;
+
     float maxBidPrice;
 
     void doOptions(int argc, char ** argv,
