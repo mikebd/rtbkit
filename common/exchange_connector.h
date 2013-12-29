@@ -43,9 +43,9 @@ struct ExchangeConnector: public ServiceBase {
     virtual ~ExchangeConnector();
 
     /** Function that will be called to notify of a new auction. */
-    typedef boost::function<void (std::shared_ptr<Auction> Auction)>
+    typedef boost::function<void (const std::shared_ptr<Auction> & Auction)>
         OnAuction;
-    
+
     /** Callback for a) when there is a new auction, and b) when an auction
         is finished.
 
@@ -134,7 +134,7 @@ struct ExchangeConnector: public ServiceBase {
        in the creative can be implemented, and allows feedback as to why
        a given campaign or creative is not working on an exchange for
        debugging purposes.
-       
+
        Please note that these methods are called infrequently at campaign
        configuration time, and apply to *all* bid requests for each
        campaign.  Filtering of individual bid requests is done via
@@ -194,7 +194,7 @@ struct ExchangeConnector: public ServiceBase {
         CampaignCompatibility()
         {
         }
-        
+
         CampaignCompatibility(const AgentConfig & config);
 
         std::vector<ExchangeCompatibility> creatives;  ///< Per-creative compatibility information
@@ -217,7 +217,7 @@ struct ExchangeConnector: public ServiceBase {
     virtual ExchangeCompatibility
     getCampaignCompatibility(const AgentConfig & config,
                              bool includeReasons) const;
-    
+
     /** Tell if a given creative is compatible with the given exchange.
         See getCampaignCompatibility().
     */
@@ -310,7 +310,7 @@ struct ExchangeConnector: public ServiceBase {
         This function should return true if the given creative is compatible
         with the given bid request, and false otherwise.
     */
-    
+
     virtual bool bidRequestCreativeFilter(const BidRequest & request,
                                           const AgentConfig & config,
                                           const void * info) const;
@@ -324,7 +324,7 @@ struct ExchangeConnector: public ServiceBase {
     /** Type of a callback which is registered as an exchange factory. */
     typedef std::function<ExchangeConnector * (ServiceBase * owner, std::string name)>
         Factory;
-    
+
     /** Register the given exchange factory. */
     static void registerFactory(const std::string & exchange, Factory factory);
 
@@ -343,8 +343,11 @@ struct ExchangeConnector: public ServiceBase {
            ServiceBase & owner,
            const std::string & name);
 
+private:
+    /** ctor shared implementation */
+    void ctor(const std::string & name);
 };
 
 
 } // namespace RTBKIT
-    
+

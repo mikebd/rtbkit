@@ -183,8 +183,8 @@ struct Router : public ServiceBase,
     */
     void connectExchange(ExchangeConnector & exchange)
     {
-        exchange.onNewAuction  = [=] (std::shared_ptr<Auction> a) { this->injectAuction(a, secondsUntilLossAssumed_); };
-        exchange.onAuctionDone = [=] (std::shared_ptr<Auction> a) { this->onAuctionDone(a); };
+        exchange.onNewAuction  = [=] (const std::shared_ptr<Auction> & a) { this->injectAuction(a, secondsUntilLossAssumed_); };
+        exchange.onAuctionDone = [=] (const std::shared_ptr<Auction> & a) { this->onAuctionDone(a); };
     }
 
     /** Register the exchange with the router and make it take ownership of it */
@@ -251,11 +251,11 @@ struct Router : public ServiceBase,
                    then secondsSinceLossAssumed will be added to
                    the current time and that value used.
     */
-    void injectAuction(std::shared_ptr<Auction> auction,
+    void injectAuction(const std::shared_ptr<Auction> & auction,
                        double lossTime = INFINITY);
-    
+
     /** Inject an auction into the router given its components.
-        
+
         onAuctionFinished: this is the callback that will be called once
                            the auction is finished
         id:                string ID to represent the auction.  Must be
@@ -471,10 +471,10 @@ public:
     void doStats(const std::vector<std::string> & message);
 
     /** We got a new auction. */
-    void onNewAuction(std::shared_ptr<Auction> auction);
+    void onNewAuction(const std::shared_ptr<Auction> & auction);
 
     /** An auction finished. */
-    void onAuctionDone(std::shared_ptr<Auction> auction);
+    void onAuctionDone(const std::shared_ptr<Auction> & auction);
 
     /** Got a configuration message; update our internal data structures */
     void doConfig(const std::string & agent,

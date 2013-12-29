@@ -28,14 +28,7 @@ ExchangeConnector(const std::string & name,
                   ServiceBase & parent)
     : ServiceBase(name, parent)
 {
-    onNewAuction  = [=] (std::shared_ptr<Auction> a) {
-        cerr << "WARNING: an auction was lost into the void.  exchange=" << name <<
-            ", auction=" << a->id << endl; };
-    onAuctionDone = [=] (std::shared_ptr<Auction> a) {};
-
-    numRequests = 0;
-    numAuctions = 0;
-    acceptAuctionProbability = 1.0;
+    ctor(name);
 }
 
 ExchangeConnector::
@@ -43,10 +36,17 @@ ExchangeConnector(const std::string & name,
                   std::shared_ptr<ServiceProxies> proxies)
     : ServiceBase(name, proxies)
 {
-    onNewAuction  = [=] (std::shared_ptr<Auction> a) {
+    ctor(name);
+}
+
+void
+ExchangeConnector::
+ctor(const std::string & name)
+{
+    onNewAuction  = [=] (const std::shared_ptr<Auction> & a) {
         cerr << "WARNING: an auction was lost into the void.  exchange=" << name <<
         ", auction=" << a->id << endl; };
-    onAuctionDone = [=] (std::shared_ptr<Auction> a) {};
+    onAuctionDone = [=] (const std::shared_ptr<Auction> & a) {};
 
     numRequests = 0;
     numAuctions = 0;

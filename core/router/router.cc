@@ -708,13 +708,13 @@ shutdown()
 
 void
 Router::
-injectAuction(std::shared_ptr<Auction> auction, double lossTime)
+injectAuction(const std::shared_ptr<Auction> & auction, double lossTime)
 {
     // cerr << "injectAuction was called!!!" << endl;
     if (!auction->handleAuction) {
         // Modify the auction to insert our auction done handling
         auction->handleAuction
-            = [=] (std::shared_ptr<Auction> auction)
+            = [=] (const std::shared_ptr<Auction> & auction)
             {
                 this->onAuctionDone(auction);
             };
@@ -2298,7 +2298,7 @@ reduceUrl(const Url & url)
 
 void
 Router::
-onNewAuction(std::shared_ptr<Auction> auction)
+onNewAuction(const std::shared_ptr<Auction> & auction)
 {
     if (!monitorClient.getStatus()) {
         Date now = Date::now();
@@ -2355,7 +2355,7 @@ onNewAuction(std::shared_ptr<Auction> auction)
 
 void
 Router::
-onAuctionDone(std::shared_ptr<Auction> auction)
+onAuctionDone(const std::shared_ptr<Auction> & auction)
 {
 #if 0
     static std::mutex lock;
