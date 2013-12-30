@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE( win_cost_model_test )
 
     auto events = stack.proxies->events->get(std::cerr);
 
-    int count = events["router.bid"];
+    int count = events["router.bids"];
 
     BOOST_CHECK_EQUAL(events["router.cummulatedBidPrice"], count * 1000);
     BOOST_CHECK_EQUAL(events["router.cummulatedAuthorizedPrice"], count * 505);
