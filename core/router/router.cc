@@ -1423,13 +1423,16 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
         auction->inStartBidding = now;
 
+        if (auction->slowMode)
+            ++slowModeBidCount;
+
         double timeLeftMs = auction->timeAvailable(now) * 1000.0;
         double timeUsedMs = auction->timeUsed(now) * 1000.0;
 
         /* trace metrics of at least the first 10 auction bids per second in slow mode */
         const bool traceAuction =
-            (auction->slowMode && ++slowModeBidCount < 11) ||
             traceAllBidMetrics ||
+            (auction->slowMode && slowModeBidCount < 11) ||
             (auction->id.hash() % 10 == 0);
 
         const auto& augList = augInfo->auction->augmentations;
