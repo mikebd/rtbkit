@@ -36,6 +36,12 @@ struct RouterRunner {
 
     float maxBidPrice;
 
+    bool traceAllAuctionMetrics;
+    bool traceAllBidMetrics;
+
+    bool traceAuctionMessages;
+    bool traceBidMessages;
+
     void doOptions(int argc, char ** argv,
                    const boost::program_options::options_description & opts
                    = boost::program_options::options_description());

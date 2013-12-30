@@ -112,7 +112,11 @@ Router(ServiceBase & parent,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       bool traceAllAuctionMetrics,
+       bool traceAllBidMetrics,
+       bool traceAuctionMessages,
+       bool traceBidMessages)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -143,7 +147,11 @@ Router(ServiceBase & parent,
       slowModeAuctionCount(0),
       slowModeBidCount(0),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      traceAllAuctionMetrics(traceAllAuctionMetrics),
+      traceAllBidMetrics(traceAllBidMetrics),
+      traceAuctionMessages(traceAuctionMessages),
+      traceBidMessages(traceBidMessages)
 {
 }
 
@@ -154,7 +162,11 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       bool traceAllAuctionMetrics,
+       bool traceAllBidMetrics,
+       bool traceAuctionMessages,
+       bool traceBidMessages)
     : ServiceBase(serviceName, services),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -186,7 +198,11 @@ Router(std::shared_ptr<ServiceProxies> services,
       slowModeAuctionCount(0),
       slowModeBidCount(0),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      traceAllAuctionMetrics(traceAllAuctionMetrics),
+      traceAllBidMetrics(traceAllBidMetrics),
+      traceAuctionMessages(traceAuctionMessages),
+      traceBidMessages(traceBidMessages)
 {
 }
 
@@ -1243,6 +1259,7 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     /* trace metrics of at least the first 10 new auctions per second in slow mode */
     const bool traceAuction =
+        traceAllAuctionMetrics ||
         (auction->slowMode && slowModeAuctionCount < 11) ||
         (auction->id.hash() % 10 == 0);
 
@@ -1412,6 +1429,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         /* trace metrics of at least the first 10 auction bids per second in slow mode */
         const bool traceAuction =
             (auction->slowMode && ++slowModeBidCount < 11) ||
+            traceAllBidMetrics ||
             (auction->id.hash() % 10 == 0);
 
         const auto& augList = augInfo->auction->augmentations;
