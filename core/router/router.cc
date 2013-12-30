@@ -112,8 +112,8 @@ Router(ServiceBase & parent,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       uint16_t maxSlowModeAuctions,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       uint16_t maxSlowModeAuctions)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -142,9 +142,9 @@ Router(ServiceBase & parent,
       numNoBidders(0),
       monitorClient(getZmqContext()),
       slowModeCount(0),
-      maxSlowModeAuctions(maxSlowModeAuctions),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      maxSlowModeAuctions(maxSlowModeAuctions)
 {
 }
 
@@ -155,8 +155,8 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       uint16_t maxSlowModeAuctions,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       uint16_t maxSlowModeAuctions)
     : ServiceBase(serviceName, services),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -186,9 +186,9 @@ Router(std::shared_ptr<ServiceProxies> services,
       numNoBidders(0),
       monitorClient(getZmqContext()),
       slowModeCount(0),
-      maxSlowModeAuctions(maxSlowModeAuctions),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      maxSlowModeAuctions(maxSlowModeAuctions)
 {
 }
 

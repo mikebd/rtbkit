@@ -43,8 +43,8 @@ RouterRunner() :
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
-    maxSlowModeAuctions(100),
-    maxBidPrice(200)
+    maxBidPrice(200),
+    maxSlowModeAuctions(100)
 {
 }
 
@@ -67,10 +67,10 @@ doOptions(int argc, char ** argv,
          "log auction requests")
         ("log-bids", value<bool>(&logBids)->zero_tokens(),
          "log bid responses")
-        ("max-slow-mode-auctions", value<uint16_t>(&maxSlowModeAuctions),
-         "maximum auctions per second considered in slow mode")
         ("max-bid-price", value(&maxBidPrice),
-         "maximum bid price accepted by router");
+         "maximum bid price accepted by router")
+        ("max-slow-mode-auctions", value<uint16_t>(&maxSlowModeAuctions),
+         "maximum auctions per second considered in slow mode");
 
     options_description all_opt = opts;
     all_opt
@@ -104,8 +104,8 @@ init()
 
     router = std::make_shared<Router>(proxies, serviceName, lossSeconds,
                                       true, logAuctions, logBids,
-                                      maxSlowModeAuctions,
-                                      USD_CPM(maxBidPrice));
+                                      USD_CPM(maxBidPrice),
+                                      maxSlowModeAuctions);
     router->init();
 
     banker = std::make_shared<SlaveBanker>(proxies->zmqContext,
