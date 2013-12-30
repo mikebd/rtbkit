@@ -106,7 +106,11 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
-           Amount maxBidAmount = USD_CPM(200));
+           Amount maxBidAmount = USD_CPM(200),
+           bool traceAllAuctionMetrics = false,
+           bool traceAllBidMetrics = false,
+           bool traceAuctionMessages = false,
+           bool traceBidMessages = false);
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
            const std::string & serviceName = "router",
@@ -114,7 +118,11 @@ struct Router : public ServiceBase,
            bool connectPostAuctionLoop = true,
            bool logAuctions = false,
            bool logBids = false,
-           Amount maxBidAmount = USD_CPM(200));
+           Amount maxBidAmount = USD_CPM(200),
+           bool traceAllAuctionMetrics = false,
+           bool traceAllBidMetrics = false,
+           bool traceAuctionMessages = false,
+           bool traceBidMessages = false);
 
     ~Router();
 
@@ -755,6 +763,12 @@ public:
     MonitorProviderClient monitorProviderClient;
 
     Amount maxBidAmount;
+
+    bool traceAllAuctionMetrics;
+    bool traceAllBidMetrics;
+
+    bool traceAuctionMessages;
+    bool traceBidMessages;
 
     /* MonitorProvider interface */
     std::string getProviderClass() const;

@@ -43,7 +43,11 @@ RouterRunner() :
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
-    maxBidPrice(200)
+    maxBidPrice(200),
+    traceAllAuctionMetrics(false),
+    traceAllBidMetrics(false),
+    traceAuctionMessages(false),
+    traceBidMessages(false)
 {
 }
 
@@ -67,7 +71,15 @@ doOptions(int argc, char ** argv,
         ("log-bids", value<bool>(&logBids)->zero_tokens(),
          "log bid responses")
         ("max-bid-price", value(&maxBidPrice),
-         "maximum bid price accepted by router");
+         "maximum bid price accepted by router")
+        ("trace-all-auction-metrics", value<bool>(&traceAllAuctionMetrics),
+         "trace metrics for all auctions")
+        ("trace-all-bid-metrics", value<bool>(&traceAllBidMetrics),
+         "trace metrics for all bids")
+        ("trace-auction-messages", value<bool>(&traceAuctionMessages),
+         "trace messages for auctions that are tracing metrics")
+        ("trace-bid-messages", value<bool>(&traceBidMessages),
+         "trace messages for bids that are tracing metrics");
 
     options_description all_opt = opts;
     all_opt
@@ -75,7 +87,7 @@ doOptions(int argc, char ** argv,
         .add(router_options);
     all_opt.add_options()
         ("help,h", "print this message");
-    
+
     variables_map vm;
     store(command_line_parser(argc, argv)
           .options(all_opt)
@@ -101,7 +113,11 @@ init()
 
     router = std::make_shared<Router>(proxies, serviceName, lossSeconds,
                                       true, logAuctions, logBids,
-                                      USD_CPM(maxBidPrice));
+                                      USD_CPM(maxBidPrice),
+                                      traceAllAuctionMetrics,
+                                      traceAllBidMetrics,
+                                      traceAuctionMessages,
+                                      traceBidMessages);
     router->init();
 
     banker = std::make_shared<SlaveBanker>(proxies->zmqContext,

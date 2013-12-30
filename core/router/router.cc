@@ -112,7 +112,11 @@ Router(ServiceBase & parent,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       bool traceAllAuctionMetrics,
+       bool traceAllBidMetrics,
+       bool traceAuctionMessages,
+       bool traceBidMessages)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -142,7 +146,11 @@ Router(ServiceBase & parent,
       monitorClient(getZmqContext()),
       slowModeCount(0),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      traceAllAuctionMetrics(traceAllAuctionMetrics),
+      traceAllBidMetrics(traceAllBidMetrics),
+      traceAuctionMessages(traceAuctionMessages),
+      traceBidMessages(traceBidMessages)
 {
 }
 
@@ -153,7 +161,11 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool connectPostAuctionLoop,
        bool logAuctions,
        bool logBids,
-       Amount maxBidAmount)
+       Amount maxBidAmount,
+       bool traceAllAuctionMetrics,
+       bool traceAllBidMetrics,
+       bool traceAuctionMessages,
+       bool traceBidMessages)
     : ServiceBase(serviceName, services),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -184,7 +196,11 @@ Router(std::shared_ptr<ServiceProxies> services,
       monitorClient(getZmqContext()),
       slowModeCount(0),
       monitorProviderClient(getZmqContext(), *this),
-      maxBidAmount(maxBidAmount)
+      maxBidAmount(maxBidAmount),
+      traceAllAuctionMetrics(traceAllAuctionMetrics),
+      traceAllBidMetrics(traceAllBidMetrics),
+      traceAuctionMessages(traceAuctionMessages),
+      traceBidMessages(traceBidMessages)
 {
 }
 
