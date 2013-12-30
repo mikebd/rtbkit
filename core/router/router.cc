@@ -1733,7 +1733,7 @@ doBid(const std::vector<std::string> & message)
             current = after;
         };
 
-    recordHit("bid");
+    recordHit("bids");
 
     doProfileEvent(0, "start");
 
@@ -2298,7 +2298,7 @@ Router::
 onNewAuction(std::shared_ptr<Auction> auction)
 {
     recordHit("auctions");
-    recordHit("exchange.%s.requests", auction->exchangeName());
+    recordHit("exchange.%s.auctions", auction->exchangeName());
 
     if (!monitorClient.getStatus()) {
         Date now = Date::now();
@@ -2316,7 +2316,7 @@ onNewAuction(std::shared_ptr<Auction> auction)
         if (slowModeCount > 100) {
             /* we only let the first 100 auctions take place each second */
             recordHit("monitor.ignoredAuctions");
-            recordHit("exchange.%s.ignoredRequests", auction->exchangeName());
+            recordHit("exchange.%s.ignoredAuctions", auction->exchangeName());
             auction->finish();
             return;
         }
