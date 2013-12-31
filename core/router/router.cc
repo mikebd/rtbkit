@@ -40,6 +40,32 @@ using namespace ML;
 namespace RTBKIT {
 
 /*****************************************************************************/
+/* IMPLEMENTATION HELPER FUNCTIONS                                           */
+/*****************************************************************************/
+
+static inline
+bool
+enableTrace(const bool countThisSecond, const bool maxTrace, const bool minTrace,
+            const bool traceAll, const Id & auctionId)
+__attribute__((always_inline));     ///< Requires a standalone function declaration
+
+static inline
+bool
+enableTrace(const bool countThisSecond, const bool maxTrace, const bool minTrace,
+            const bool traceAll, const Id & auctionId)
+{
+    const bool maxTraceExceeded = maxTrace > 0 && countThisSecond > maxTrace;
+    const bool minTraceExceeded = countThisSecond > minTrace;
+
+    return
+        (! maxTraceExceeded) &&
+        (traceAll ||
+            (! minTraceExceeded) ||
+            (auctionId.hash() % 10 == 0));
+}
+
+
+/*****************************************************************************/
 /* AGENT INFO                                                                */
 /*****************************************************************************/
 
@@ -1293,24 +1319,12 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    const bool traceAuctionCountThisSecond = auction->slowMode ?
-        slowModeAuctionCountThisSecond : auctionCountThisSecond;
-    const bool maxTraceMetrics = auction->slowMode ?
-        maxSlowModeTraceAuctionMetrics : maxTraceAuctionMetrics;
-    const bool minTraceMetrics = auction->slowMode ?
-        minSlowModeTraceAuctionMetrics : maxTraceAuctionMetrics;
-
-    const bool maxTraceMetricsExceeded =
-        maxTraceMetrics > 0 &&
-        traceAuctionCountThisSecond > maxTraceMetrics;
-    const bool minTraceMetricsExceeded =
-        traceAuctionCountThisSecond > minTraceMetrics;
-
-    const bool traceAuctionMetrics =
-        (! maxTraceMetricsExceeded) &&
-        (traceAllAuctionMetrics ||
-            (! minTraceMetricsExceeded) ||
-            (auction->id.hash() % 10 == 0));
+    const bool traceAuctionMetrics = enableTrace(
+        auction->slowMode ? slowModeAuctionCountThisSecond : auctionCountThisSecond,
+        auction->slowMode ? maxSlowModeTraceAuctionMetrics : maxTraceAuctionMetrics,
+        auction->slowMode ? minSlowModeTraceAuctionMetrics : minTraceAuctionMetrics,
+        traceAllAuctionMetrics,
+        auction->id);
 
     AgentConfig::RequestFilterCache cache(*auction->request);
 
@@ -1479,24 +1493,12 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         else
             ++bidCountThisSecond;
 
-        const bool traceBidCountThisSecond = auction->slowMode ?
-            slowModeBidCountThisSecond : bidCountThisSecond;
-        const bool maxTraceMetrics = auction->slowMode ?
-            maxSlowModeTraceBidMetrics : maxTraceBidMetrics;
-        const bool minTraceMetrics = auction->slowMode ?
-            minSlowModeTraceBidMetrics : maxTraceBidMetrics;
-
-        const bool maxTraceMetricsExceeded =
-            maxTraceMetrics > 0 &&
-            traceBidCountThisSecond > maxTraceMetrics;
-        const bool minTraceMetricsExceeded =
-            traceBidCountThisSecond > minTraceMetrics;
-
-        const bool traceBidMetrics =
-            (! maxTraceMetricsExceeded) &&
-            (traceAllBidMetrics ||
-                (! minTraceMetricsExceeded) ||
-                (auction->id.hash() % 10 == 0));
+        const bool traceBidMetrics = enableTrace(
+            auction->slowMode ? slowModeBidCountThisSecond : bidCountThisSecond,
+            auction->slowMode ? maxSlowModeTraceBidMetrics : maxTraceBidMetrics,
+            auction->slowMode ? minSlowModeTraceBidMetrics : minTraceBidMetrics,
+            traceAllBidMetrics,
+            auction->id);
 
         const auto& augList = augInfo->auction->augmentations;
 
