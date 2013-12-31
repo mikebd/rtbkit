@@ -36,6 +36,22 @@ struct RouterRunner {
 
     float maxBidPrice;
 
+    /* Metric tracing limits per second - slow mode.
+       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
+       Avoid max = 0 (unlimited) at high QPS. */
+    uint16_t maxSlowModeTraceAuctionMetrics;            // default = 1000,  0 = unlimited
+    uint16_t maxSlowModeTraceBidMetrics;                // default =  500,  0 = unlimited
+    uint16_t minSlowModeTraceAuctionMetrics;            // default =  100
+    uint16_t minSlowModeTraceBidMetrics;                // default =   50
+
+    /* Metric tracing limits per second - normal mode.
+       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
+       Avoid max = 0 (unlimited) at high QPS. */
+    uint16_t maxTraceAuctionMetrics;                    // default =  500,  0 = unlimited
+    uint16_t maxTraceBidMetrics;                        // default =  250,  0 = unlimited
+    uint16_t minTraceAuctionMetrics;                    // default =   50
+    uint16_t minTraceBidMetrics;                        // default =   25
+
     bool traceAllAuctionMetrics;
     bool traceAllBidMetrics;
 

@@ -113,6 +113,14 @@ Router(ServiceBase & parent,
        bool logAuctions,
        bool logBids,
        Amount maxBidAmount,
+       uint16_t maxSlowModeTraceAuctionMetrics,
+       uint16_t maxSlowModeTraceBidMetrics,
+       uint16_t minSlowModeTraceAuctionMetrics,
+       uint16_t minSlowModeTraceBidMetrics,
+       uint16_t maxTraceAuctionMetrics,
+       uint16_t maxTraceBidMetrics,
+       uint16_t minTraceAuctionMetrics,
+       uint16_t minTraceBidMetrics,
        bool traceAllAuctionMetrics,
        bool traceAllBidMetrics,
        bool traceAuctionMessages,
@@ -144,10 +152,20 @@ Router(ServiceBase & parent,
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
+      auctionCount(0),
+      bidCount(0),
       slowModeAuctionCount(0),
       slowModeBidCount(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
+      maxSlowModeTraceAuctionMetrics(maxSlowModeTraceAuctionMetrics),
+      maxSlowModeTraceBidMetrics(maxSlowModeTraceBidMetrics),
+      minSlowModeTraceAuctionMetrics(minSlowModeTraceAuctionMetrics),
+      minSlowModeTraceBidMetrics(minSlowModeTraceBidMetrics),
+      maxTraceAuctionMetrics(maxTraceAuctionMetrics),
+      maxTraceBidMetrics(maxTraceBidMetrics),
+      minTraceAuctionMetrics(minTraceAuctionMetrics),
+      minTraceBidMetrics(minTraceBidMetrics),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
       traceAllBidMetrics(traceAllBidMetrics),
       traceAuctionMessages(traceAuctionMessages),
@@ -163,6 +181,14 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool logAuctions,
        bool logBids,
        Amount maxBidAmount,
+       uint16_t maxSlowModeTraceAuctionMetrics,
+       uint16_t maxSlowModeTraceBidMetrics,
+       uint16_t minSlowModeTraceAuctionMetrics,
+       uint16_t minSlowModeTraceBidMetrics,
+       uint16_t maxTraceAuctionMetrics,
+       uint16_t maxTraceBidMetrics,
+       uint16_t minTraceAuctionMetrics,
+       uint16_t minTraceBidMetrics,
        bool traceAllAuctionMetrics,
        bool traceAllBidMetrics,
        bool traceAuctionMessages,
@@ -195,10 +221,20 @@ Router(std::shared_ptr<ServiceProxies> services,
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
+      auctionCount(0),
+      bidCount(0),
       slowModeAuctionCount(0),
       slowModeBidCount(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
+      maxSlowModeTraceAuctionMetrics(maxSlowModeTraceAuctionMetrics),
+      maxSlowModeTraceBidMetrics(maxSlowModeTraceBidMetrics),
+      minSlowModeTraceAuctionMetrics(minSlowModeTraceAuctionMetrics),
+      minSlowModeTraceBidMetrics(minSlowModeTraceBidMetrics),
+      maxTraceAuctionMetrics(maxTraceAuctionMetrics),
+      maxTraceBidMetrics(maxTraceBidMetrics),
+      minTraceAuctionMetrics(minTraceAuctionMetrics),
+      minTraceBidMetrics(minTraceBidMetrics),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
       traceAllBidMetrics(traceAllBidMetrics),
       traceAuctionMessages(traceAuctionMessages),
@@ -1257,26 +1293,38 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    /* trace metrics of at least the first 10 new auctions per second in slow mode */
-    const bool traceAuction =
-        traceAllAuctionMetrics ||
-        (auction->slowMode && slowModeAuctionCount < 11) ||
-        (auction->id.hash() % 10 == 0);
+    const bool traceAuctionCount = auction->slowMode ?
+        slowModeAuctionCount : auctionCount;
+    const bool maxTraceMetrics = auction->slowMode ?
+        maxSlowModeTraceAuctionMetrics : maxTraceAuctionMetrics;
+    const bool minTraceMetrics = auction->slowMode ?
+        minSlowModeTraceAuctionMetrics : maxTraceAuctionMetrics;
+
+    const bool maxTraceMetricsExceeded =
+        maxTraceMetrics > 0 &&
+        traceAuctionCount > maxTraceMetrics;
+    const bool minTraceMetricsExceeded =
+        traceAuctionCount > minTraceMetrics;
+
+    const bool traceAuctionMetrics =
+        (! maxTraceMetricsExceeded) &&
+        (traceAllAuctionMetrics ||
+            (! minTraceMetricsExceeded) ||
+            (auction->id.hash() % 10 == 0));
 
     AgentConfig::RequestFilterCache cache(*auction->request);
 
     auto exchangeConnector = auction->exchangeConnector;
 
-
     auto doFilterStat = [&] (const AgentConfig& config, const char * reason) {
-        if (!traceAuction) return;
+        if (!traceAuctionMetrics) return;
 
         this->recordHit("accounts.%s.filter.%s",
                 config.account.toString('.'),
                 reason);
     };
 
-    if (traceAuction) {
+    if (traceAuctionMetrics) {
         forEachAgent([&] (const AgentInfoEntry& info) {
                     ML::atomic_inc(info.stats->intoFilters);
                     doFilterStat(*info.config, "intoStaticFilters");
@@ -1423,17 +1471,32 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
         auction->inStartBidding = now;
 
-        if (auction->slowMode)
-            ++slowModeBidCount;
-
         double timeLeftMs = auction->timeAvailable(now) * 1000.0;
         double timeUsedMs = auction->timeUsed(now) * 1000.0;
 
-        /* trace metrics of at least the first 10 auction bids per second in slow mode */
-        const bool traceAuction =
-            traceAllBidMetrics ||
-            (auction->slowMode && slowModeBidCount < 11) ||
-            (auction->id.hash() % 10 == 0);
+        if (auction->slowMode)
+            ++slowModeBidCount;
+        else
+            ++bidCount;
+
+        const bool traceBidCount = auction->slowMode ?
+            slowModeBidCount : bidCount;
+        const bool maxTraceMetrics = auction->slowMode ?
+            maxSlowModeTraceBidMetrics : maxTraceBidMetrics;
+        const bool minTraceMetrics = auction->slowMode ?
+            minSlowModeTraceBidMetrics : maxTraceBidMetrics;
+
+        const bool maxTraceMetricsExceeded =
+            maxTraceMetrics > 0 &&
+            traceBidCount > maxTraceMetrics;
+        const bool minTraceMetricsExceeded =
+            traceBidCount > minTraceMetrics;
+
+        const bool traceBidMetrics =
+            (! maxTraceMetricsExceeded) &&
+            (traceAllBidMetrics ||
+                (! minTraceMetricsExceeded) ||
+                (auction->id.hash() % 10 == 0));
 
         const auto& augList = augInfo->auction->augmentations;
 
@@ -1452,7 +1515,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
                 auto doFilterStat = [&] (const char * reason)
                     {
-                        if (!traceAuction) return;
+                        if (!traceBidMetrics) return;
 
                         this->recordHit("accounts.%s.filter.%s",
                                         config.account.toString('.'),
@@ -1461,7 +1524,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
                 auto doFilterMetric = [&] (const char * reason, float val)
                     {
-                        if (!traceAuction) return;
+                        if (!traceBidMetrics) return;
 
                         this->recordOutcome(val, "accounts.%s.filter.%s",
                                             config.account.toString('.'),
@@ -2329,9 +2392,19 @@ void
 Router::
 onNewAuction(std::shared_ptr<Auction> auction)
 {
-    if (!monitorClient.getStatus()) {
-        Date now = Date::now();
+    Date now = Date::now();
 
+    if (monitorClient.getStatus()) {
+        if ((uint32_t) lastAuction.secondsSinceEpoch()
+            < (uint32_t) now.secondsSinceEpoch()) {
+            lastAuction = now;
+            auctionCount = 1;
+            bidCount = 0;
+        }
+        else {
+            ++auctionCount;
+        }
+    } else {
         if ((uint32_t) slowModeLastAuction.secondsSinceEpoch()
             < (uint32_t) now.secondsSinceEpoch()) {
             slowModeLastAuction = now;
@@ -2340,7 +2413,7 @@ onNewAuction(std::shared_ptr<Auction> auction)
             recordHit("monitor.systemInSlowMode");
         }
         else {
-            slowModeAuctionCount++;
+            ++slowModeAuctionCount;
         }
 
         auction->slowMode = true;

@@ -44,6 +44,14 @@ RouterRunner() :
     logAuctions(false),
     logBids(false),
     maxBidPrice(200),
+    maxSlowModeTraceAuctionMetrics(Router::DefaultMaxSlowModeTraceAuctionMetrics),
+    maxSlowModeTraceBidMetrics(Router::DefaultMaxSlowModeTraceBidMetrics),
+    minSlowModeTraceAuctionMetrics(Router::DefaultMinSlowModeTraceAuctionMetrics),
+    minSlowModeTraceBidMetrics(Router::DefaultMinSlowModeTraceBidMetrics),
+    maxTraceAuctionMetrics(Router::DefaultMaxTraceAuctionMetrics),
+    maxTraceBidMetrics(Router::DefaultMaxTraceBidMetrics),
+    minTraceAuctionMetrics(Router::DefaultMinTraceAuctionMetrics),
+    minTraceBidMetrics(Router::DefaultMinTraceBidMetrics),
     traceAllAuctionMetrics(false),
     traceAllBidMetrics(false),
     traceAuctionMessages(false),
@@ -72,6 +80,22 @@ doOptions(int argc, char ** argv,
          "log bid responses")
         ("max-bid-price", value(&maxBidPrice),
          "maximum bid price accepted by router")
+        ("max-slow-mode-trace-auction-metrics", value<uint16_t>(&maxSlowModeTraceAuctionMetrics),
+         "maximum auction metrics to trace per second in slow mode")
+        ("max-slow-mode-trace-bid-metrics", value<uint16_t>(&maxSlowModeTraceBidMetrics),
+         "maximum bid metrics to trace per second in slow mode")
+        ("min-slow-mode-trace-auction-metrics", value<uint16_t>(&minSlowModeTraceAuctionMetrics),
+         "minimum auction metrics to trace per second in slow mode")
+        ("min-slow-mode-trace-bid-metrics", value<uint16_t>(&minSlowModeTraceBidMetrics),
+         "minimum bids metrics to trace per second in slow mode")
+        ("max-trace-auction-metrics", value<uint16_t>(&maxTraceAuctionMetrics),
+         "maximum auction metrics to trace per second")
+        ("max-trace-bid-metrics", value<uint16_t>(&maxTraceBidMetrics),
+         "maximum bid metrics to trace per second")
+        ("min-trace-auction-metrics", value<uint16_t>(&minTraceAuctionMetrics),
+         "minimum auction metrics to trace per second")
+        ("min-trace-bid-metrics", value<uint16_t>(&minTraceBidMetrics),
+         "minimum bids metrics to trace per second")
         ("trace-all-auction-metrics", value<bool>(&traceAllAuctionMetrics),
          "trace metrics for all auctions")
         ("trace-all-bid-metrics", value<bool>(&traceAllBidMetrics),
@@ -114,6 +138,14 @@ init()
     router = std::make_shared<Router>(proxies, serviceName, lossSeconds,
                                       true, logAuctions, logBids,
                                       USD_CPM(maxBidPrice),
+                                      maxSlowModeTraceAuctionMetrics,
+                                      maxSlowModeTraceBidMetrics,
+                                      minSlowModeTraceAuctionMetrics,
+                                      minSlowModeTraceBidMetrics,
+                                      maxTraceAuctionMetrics,
+                                      maxTraceBidMetrics,
+                                      minTraceAuctionMetrics,
+                                      minTraceBidMetrics,
                                       traceAllAuctionMetrics,
                                       traceAllBidMetrics,
                                       traceAuctionMessages,
