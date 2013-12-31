@@ -152,10 +152,10 @@ Router(ServiceBase & parent,
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
-      auctionCount(0),
-      bidCount(0),
-      slowModeAuctionCount(0),
-      slowModeBidCount(0),
+      auctionCountThisSecond(0),
+      bidCountThisSecond(0),
+      slowModeAuctionCountThisSecond(0),
+      slowModeBidCountThisSecond(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
       maxSlowModeTraceAuctionMetrics(maxSlowModeTraceAuctionMetrics),
@@ -221,10 +221,10 @@ Router(std::shared_ptr<ServiceProxies> services,
       numAuctionsWithBid(0), numNoPotentialBidders(0),
       numNoBidders(0),
       monitorClient(getZmqContext()),
-      auctionCount(0),
-      bidCount(0),
-      slowModeAuctionCount(0),
-      slowModeBidCount(0),
+      auctionCountThisSecond(0),
+      bidCountThisSecond(0),
+      slowModeAuctionCountThisSecond(0),
+      slowModeBidCountThisSecond(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
       maxSlowModeTraceAuctionMetrics(maxSlowModeTraceAuctionMetrics),
@@ -1293,8 +1293,8 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    const bool traceAuctionCount = auction->slowMode ?
-        slowModeAuctionCount : auctionCount;
+    const bool traceAuctionCountThisSecond = auction->slowMode ?
+        slowModeAuctionCountThisSecond : auctionCountThisSecond;
     const bool maxTraceMetrics = auction->slowMode ?
         maxSlowModeTraceAuctionMetrics : maxTraceAuctionMetrics;
     const bool minTraceMetrics = auction->slowMode ?
@@ -1302,9 +1302,9 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     const bool maxTraceMetricsExceeded =
         maxTraceMetrics > 0 &&
-        traceAuctionCount > maxTraceMetrics;
+        traceAuctionCountThisSecond > maxTraceMetrics;
     const bool minTraceMetricsExceeded =
-        traceAuctionCount > minTraceMetrics;
+        traceAuctionCountThisSecond > minTraceMetrics;
 
     const bool traceAuctionMetrics =
         (! maxTraceMetricsExceeded) &&
@@ -1475,12 +1475,12 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         double timeUsedMs = auction->timeUsed(now) * 1000.0;
 
         if (auction->slowMode)
-            ++slowModeBidCount;
+            ++slowModeBidCountThisSecond;
         else
-            ++bidCount;
+            ++bidCountThisSecond;
 
-        const bool traceBidCount = auction->slowMode ?
-            slowModeBidCount : bidCount;
+        const bool traceBidCountThisSecond = auction->slowMode ?
+            slowModeBidCountThisSecond : bidCountThisSecond;
         const bool maxTraceMetrics = auction->slowMode ?
             maxSlowModeTraceBidMetrics : maxTraceBidMetrics;
         const bool minTraceMetrics = auction->slowMode ?
@@ -1488,9 +1488,9 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
         const bool maxTraceMetricsExceeded =
             maxTraceMetrics > 0 &&
-            traceBidCount > maxTraceMetrics;
+            traceBidCountThisSecond > maxTraceMetrics;
         const bool minTraceMetricsExceeded =
-            traceBidCount > minTraceMetrics;
+            traceBidCountThisSecond > minTraceMetrics;
 
         const bool traceBidMetrics =
             (! maxTraceMetricsExceeded) &&
@@ -2398,27 +2398,27 @@ onNewAuction(std::shared_ptr<Auction> auction)
         if ((uint32_t) lastAuction.secondsSinceEpoch()
             < (uint32_t) now.secondsSinceEpoch()) {
             lastAuction = now;
-            auctionCount = 1;
-            bidCount = 0;
+            auctionCountThisSecond = 1;
+            bidCountThisSecond = 0;
         }
         else {
-            ++auctionCount;
+            ++auctionCountThisSecond;
         }
     } else {
         if ((uint32_t) slowModeLastAuction.secondsSinceEpoch()
             < (uint32_t) now.secondsSinceEpoch()) {
             slowModeLastAuction = now;
-            slowModeAuctionCount = 1;
-            slowModeBidCount = 0;
+            slowModeAuctionCountThisSecond = 1;
+            slowModeBidCountThisSecond = 0;
             recordHit("monitor.systemInSlowMode");
         }
         else {
-            ++slowModeAuctionCount;
+            ++slowModeAuctionCountThisSecond;
         }
 
         auction->slowMode = true;
 
-        if (slowModeAuctionCount > 100) {
+        if (slowModeAuctionCountThisSecond > 100) {
             /* we only let the first 100 auctions take place each second */
             recordHit("monitor.ignoredAuctions");
             auction->finish();

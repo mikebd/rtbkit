@@ -784,11 +784,11 @@ public:
        requests */
     MonitorClient monitorClient;
     Date lastAuction;
-    int auctionCount;
-    int bidCount;
+    int auctionCountThisSecond;
+    int bidCountThisSecond;
     Date slowModeLastAuction;
-    int slowModeAuctionCount;
-    int slowModeBidCount;
+    int slowModeAuctionCountThisSecond;
+    int slowModeBidCountThisSecond;
 
     /* MONITOR PROVIDER */
     /* Post service health status to Monitor */
