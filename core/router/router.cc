@@ -139,6 +139,7 @@ Router(ServiceBase & parent,
        bool logAuctions,
        bool logBids,
        Amount maxBidAmount,
+       // Trace Metrics (Graphite):
        uint16_t maxSlowModeTraceAuctionMetrics,
        uint16_t maxSlowModeTraceBidMetrics,
        uint16_t minSlowModeTraceAuctionMetrics,
@@ -149,8 +150,17 @@ Router(ServiceBase & parent,
        uint16_t minTraceBidMetrics,
        bool traceAllAuctionMetrics,
        bool traceAllBidMetrics,
-       bool traceAuctionMessages,
-       bool traceBidMessages)
+       // Trace Messages:
+       uint16_t maxSlowModeTraceAuctionMessages,
+       uint16_t maxSlowModeTraceBidMessages,
+       uint16_t minSlowModeTraceAuctionMessages,
+       uint16_t minSlowModeTraceBidMessages,
+       uint16_t maxTraceAuctionMessages,
+       uint16_t maxTraceBidMessages,
+       uint16_t minTraceAuctionMessages,
+       uint16_t minTraceBidMessages,
+       bool traceAllAuctionMessages,
+       bool traceAllBidMessages)
     : ServiceBase(serviceName, parent),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -184,6 +194,7 @@ Router(ServiceBase & parent,
       slowModeBidCountThisSecond(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
+      // Trace Metrics (Graphite):
       maxSlowModeTraceAuctionMetrics(maxSlowModeTraceAuctionMetrics),
       maxSlowModeTraceBidMetrics(maxSlowModeTraceBidMetrics),
       minSlowModeTraceAuctionMetrics(minSlowModeTraceAuctionMetrics),
@@ -194,8 +205,17 @@ Router(ServiceBase & parent,
       minTraceBidMetrics(minTraceBidMetrics),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
       traceAllBidMetrics(traceAllBidMetrics),
-      traceAuctionMessages(traceAuctionMessages),
-      traceBidMessages(traceBidMessages)
+      // Trace Messages:
+      maxSlowModeTraceAuctionMessages(maxSlowModeTraceAuctionMessages),
+      maxSlowModeTraceBidMessages(maxSlowModeTraceBidMessages),
+      minSlowModeTraceAuctionMessages(minSlowModeTraceAuctionMessages),
+      minSlowModeTraceBidMessages(minSlowModeTraceBidMessages),
+      maxTraceAuctionMessages(maxTraceAuctionMessages),
+      maxTraceBidMessages(maxTraceBidMessages),
+      minTraceAuctionMessages(minTraceAuctionMessages),
+      minTraceBidMessages(minTraceBidMessages),
+      traceAllAuctionMessages(traceAllAuctionMessages),
+      traceAllBidMessages(traceAllBidMessages)
 {
 }
 
@@ -207,6 +227,7 @@ Router(std::shared_ptr<ServiceProxies> services,
        bool logAuctions,
        bool logBids,
        Amount maxBidAmount,
+       // Trace Metrics (Graphite):
        uint16_t maxSlowModeTraceAuctionMetrics,
        uint16_t maxSlowModeTraceBidMetrics,
        uint16_t minSlowModeTraceAuctionMetrics,
@@ -217,8 +238,17 @@ Router(std::shared_ptr<ServiceProxies> services,
        uint16_t minTraceBidMetrics,
        bool traceAllAuctionMetrics,
        bool traceAllBidMetrics,
-       bool traceAuctionMessages,
-       bool traceBidMessages)
+       // Trace Messages:
+       uint16_t maxSlowModeTraceAuctionMessages,
+       uint16_t maxSlowModeTraceBidMessages,
+       uint16_t minSlowModeTraceAuctionMessages,
+       uint16_t minSlowModeTraceBidMessages,
+       uint16_t maxTraceAuctionMessages,
+       uint16_t maxTraceBidMessages,
+       uint16_t minTraceAuctionMessages,
+       uint16_t minTraceBidMessages,
+       bool traceAllAuctionMessages,
+       bool traceAllBidMessages)
     : ServiceBase(serviceName, services),
       shutdown_(false),
       agentEndpoint(getZmqContext()),
@@ -253,6 +283,7 @@ Router(std::shared_ptr<ServiceProxies> services,
       slowModeBidCountThisSecond(0),
       monitorProviderClient(getZmqContext(), *this),
       maxBidAmount(maxBidAmount),
+      // Trace Metrics (Graphite):
       maxSlowModeTraceAuctionMetrics(maxSlowModeTraceAuctionMetrics),
       maxSlowModeTraceBidMetrics(maxSlowModeTraceBidMetrics),
       minSlowModeTraceAuctionMetrics(minSlowModeTraceAuctionMetrics),
@@ -263,8 +294,17 @@ Router(std::shared_ptr<ServiceProxies> services,
       minTraceBidMetrics(minTraceBidMetrics),
       traceAllAuctionMetrics(traceAllAuctionMetrics),
       traceAllBidMetrics(traceAllBidMetrics),
-      traceAuctionMessages(traceAuctionMessages),
-      traceBidMessages(traceBidMessages)
+      // Trace Messages:
+      maxSlowModeTraceAuctionMessages(maxSlowModeTraceAuctionMessages),
+      maxSlowModeTraceBidMessages(maxSlowModeTraceBidMessages),
+      minSlowModeTraceAuctionMessages(minSlowModeTraceAuctionMessages),
+      minSlowModeTraceBidMessages(minSlowModeTraceBidMessages),
+      maxTraceAuctionMessages(maxTraceAuctionMessages),
+      maxTraceBidMessages(maxTraceBidMessages),
+      minTraceAuctionMessages(minTraceAuctionMessages),
+      minTraceBidMessages(minTraceBidMessages),
+      traceAllAuctionMessages(traceAllAuctionMessages),
+      traceAllBidMessages(traceAllBidMessages)
 {
 }
 

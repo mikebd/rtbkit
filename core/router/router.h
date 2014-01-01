@@ -101,15 +101,25 @@ struct Router : public ServiceBase,
                 public MonitorProvider
 {
     enum {
-        DefaultMaxSlowModeTraceAuctionMetrics = 1000,
-        DefaultMaxSlowModeTraceBidMetrics     =  500,
-        DefaultMinSlowModeTraceAuctionMetrics =  100,
-        DefaultMinSlowModeTraceBidMetrics     =   50,
+        DefaultMaxSlowModeTraceAuctionMetrics       = 1000,
+        DefaultMaxSlowModeTraceBidMetrics           =  500,
+        DefaultMinSlowModeTraceAuctionMetrics       =  100,
+        DefaultMinSlowModeTraceBidMetrics           =   50,
 
-        DefaultMaxTraceAuctionMetrics         =  500,
-        DefaultMaxTraceBidMetrics             =  250,
-        DefaultMinTraceAuctionMetrics         =   50,
-        DefaultMinTraceBidMetrics             =   25
+        DefaultMaxTraceAuctionMetrics               =  500,
+        DefaultMaxTraceBidMetrics                   =  250,
+        DefaultMinTraceAuctionMetrics               =   50,
+        DefaultMinTraceBidMetrics                   =   25,
+
+        DefaultMaxSlowModeTraceAuctionMessages      =    1,
+        DefaultMaxSlowModeTraceBidMessages          =    1,
+        DefaultMinSlowModeTraceAuctionMessages      =    0,
+        DefaultMinSlowModeTraceBidMessages          =    0,
+
+        DefaultMaxTraceAuctionMessages              =    0,
+        DefaultMaxTraceBidMessages                  =    0,
+        DefaultMinTraceAuctionMessages              =    0,
+        DefaultMinTraceBidMessages                  =    0
     };
 
     Router(ServiceBase & parent,
@@ -129,8 +139,16 @@ struct Router : public ServiceBase,
            uint16_t minTraceBidMetrics              = DefaultMinTraceBidMetrics,
            bool traceAllAuctionMetrics              = false,
            bool traceAllBidMetrics                  = false,
-           bool traceAuctionMessages                = false,
-           bool traceBidMessages                    = false);
+           uint16_t maxSlowModeTraceAuctionMessages = DefaultMaxSlowModeTraceAuctionMessages,
+           uint16_t maxSlowModeTraceBidMessages     = DefaultMaxSlowModeTraceBidMessages,
+           uint16_t minSlowModeTraceAuctionMessages = DefaultMinSlowModeTraceAuctionMessages,
+           uint16_t minSlowModeTraceBidMessages     = DefaultMinSlowModeTraceBidMessages,
+           uint16_t maxTraceAuctionMessages         = DefaultMaxTraceAuctionMessages,
+           uint16_t maxTraceBidMessages             = DefaultMaxTraceBidMessages,
+           uint16_t minTraceAuctionMessages         = DefaultMinTraceAuctionMessages,
+           uint16_t minTraceBidMessages             = DefaultMinTraceBidMessages,
+           bool traceAllAuctionMessages             = false,
+           bool traceAllBidMessages                 = false);
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
            const std::string & serviceName          = "router",
@@ -149,8 +167,16 @@ struct Router : public ServiceBase,
            uint16_t minTraceBidMetrics              = DefaultMinTraceBidMetrics,
            bool traceAllAuctionMetrics              = false,
            bool traceAllBidMetrics                  = false,
-           bool traceAuctionMessages                = false,
-           bool traceBidMessages                    = false);
+           uint16_t maxSlowModeTraceAuctionMessages = DefaultMaxSlowModeTraceAuctionMessages,
+           uint16_t maxSlowModeTraceBidMessages     = DefaultMaxSlowModeTraceBidMessages,
+           uint16_t minSlowModeTraceAuctionMessages = DefaultMinSlowModeTraceAuctionMessages,
+           uint16_t minSlowModeTraceBidMessages     = DefaultMinSlowModeTraceBidMessages,
+           uint16_t maxTraceAuctionMessages         = DefaultMaxTraceAuctionMessages,
+           uint16_t maxTraceBidMessages             = DefaultMaxTraceBidMessages,
+           uint16_t minTraceAuctionMessages         = DefaultMinTraceAuctionMessages,
+           uint16_t minTraceBidMessages             = DefaultMinTraceBidMessages,
+           bool traceAllAuctionMessages             = false,
+           bool traceAllBidMessages                 = false);
 
     ~Router();
 
@@ -794,7 +820,15 @@ public:
     /* Post service health status to Monitor */
     MonitorProviderClient monitorProviderClient;
 
+    /* MonitorProvider interface */
+    std::string getProviderClass() const;
+    MonitorIndicator getProviderIndicators() const;
+
     Amount maxBidAmount;
+
+    /*************************************************************************/
+    /* TRACE METRICS (GRAPHITE)                                              */
+    /*************************************************************************/
 
     /* Metric tracing limits per second - slow mode.
        Perhaps higher than normal mode to assist in diagnosing slow mode condition.
@@ -819,13 +853,32 @@ public:
     bool traceAllAuctionMetrics;
     bool traceAllBidMetrics;
 
-    /* Enable message tracing when metric tracing is enabled */
-    bool traceAuctionMessages;
-    bool traceBidMessages;
+    /*************************************************************************/
+    /* TRACE MESSAGES                                                        */
+    /*************************************************************************/
 
-    /* MonitorProvider interface */
-    std::string getProviderClass() const;
-    MonitorIndicator getProviderIndicators() const;
+    /* Message tracing limits per second - slow mode.
+       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
+       Avoid max = 0 (unlimited) at high QPS. */
+    uint16_t maxSlowModeTraceAuctionMessages;           // default =    1,  0 = unlimited
+    uint16_t maxSlowModeTraceBidMessages;               // default =    1,  0 = unlimited
+    uint16_t minSlowModeTraceAuctionMessages;           // default =    0
+    uint16_t minSlowModeTraceBidMessages;               // default =    0
+
+    /* Message tracing limits per second - normal mode.
+       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
+       Avoid max = 0 (unlimited) at high QPS. */
+    uint16_t maxTraceAuctionMessages;                   // default =    0,  0 = unlimited
+    uint16_t maxTraceBidMessages;                       // default =    0,  0 = unlimited
+    uint16_t minTraceAuctionMessages;                   // default =    0
+    uint16_t minTraceBidMessages;                       // default =    0
+
+    /* Force message tracing (within max limits) - normal + slow mode.
+       TODO: Consider adding separate slow mode controls.
+       TODO: Convert to a probability control for randomization,
+             replace: auction->id.hash() % 10 == 0 */
+    bool traceAllAuctionMessages;
+    bool traceAllBidMessages;
 };
 
 

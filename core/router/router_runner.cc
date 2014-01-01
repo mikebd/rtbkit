@@ -44,6 +44,7 @@ RouterRunner() :
     logAuctions(false),
     logBids(false),
     maxBidPrice(200),
+    // Trace Metrics (Graphite):
     maxSlowModeTraceAuctionMetrics(Router::DefaultMaxSlowModeTraceAuctionMetrics),
     maxSlowModeTraceBidMetrics(Router::DefaultMaxSlowModeTraceBidMetrics),
     minSlowModeTraceAuctionMetrics(Router::DefaultMinSlowModeTraceAuctionMetrics),
@@ -54,8 +55,17 @@ RouterRunner() :
     minTraceBidMetrics(Router::DefaultMinTraceBidMetrics),
     traceAllAuctionMetrics(false),
     traceAllBidMetrics(false),
-    traceAuctionMessages(false),
-    traceBidMessages(false)
+    // Trace Messages:
+    maxSlowModeTraceAuctionMessages(Router::DefaultMaxSlowModeTraceAuctionMessages),
+    maxSlowModeTraceBidMessages(Router::DefaultMaxSlowModeTraceBidMessages),
+    minSlowModeTraceAuctionMessages(Router::DefaultMinSlowModeTraceAuctionMessages),
+    minSlowModeTraceBidMessages(Router::DefaultMinSlowModeTraceBidMessages),
+    maxTraceAuctionMessages(Router::DefaultMaxTraceAuctionMessages),
+    maxTraceBidMessages(Router::DefaultMaxTraceBidMessages),
+    minTraceAuctionMessages(Router::DefaultMinTraceAuctionMessages),
+    minTraceBidMessages(Router::DefaultMinTraceBidMessages),
+    traceAllAuctionMessages(false),
+    traceAllBidMessages(false)
 {
 }
 
@@ -80,6 +90,7 @@ doOptions(int argc, char ** argv,
          "log bid responses")
         ("max-bid-price", value(&maxBidPrice),
          "maximum bid price accepted by router")
+        // Trace Metrics (Graphite):
         ("max-slow-mode-trace-auction-metrics", value<uint16_t>(&maxSlowModeTraceAuctionMetrics),
          "maximum auction metrics to trace per second in slow mode")
         ("max-slow-mode-trace-bid-metrics", value<uint16_t>(&maxSlowModeTraceBidMetrics),
@@ -100,10 +111,27 @@ doOptions(int argc, char ** argv,
          "trace metrics for all auctions")
         ("trace-all-bid-metrics", value<bool>(&traceAllBidMetrics),
          "trace metrics for all bids")
-        ("trace-auction-messages", value<bool>(&traceAuctionMessages),
-         "trace messages for auctions that are tracing metrics")
-        ("trace-bid-messages", value<bool>(&traceBidMessages),
-         "trace messages for bids that are tracing metrics");
+        // Trace Messages:
+        ("max-slow-mode-trace-auction-messages", value<uint16_t>(&maxSlowModeTraceAuctionMessages),
+         "maximum auction messages to trace per second in slow mode")
+        ("max-slow-mode-trace-bid-messages", value<uint16_t>(&maxSlowModeTraceBidMessages),
+         "maximum bid messages to trace per second in slow mode")
+        ("min-slow-mode-trace-auction-messages", value<uint16_t>(&minSlowModeTraceAuctionMessages),
+         "minimum auction messages to trace per second in slow mode")
+        ("min-slow-mode-trace-bid-messages", value<uint16_t>(&minSlowModeTraceBidMessages),
+         "minimum bids messages to trace per second in slow mode")
+        ("max-trace-auction-messages", value<uint16_t>(&maxTraceAuctionMessages),
+         "maximum auction messages to trace per second")
+        ("max-trace-bid-messages", value<uint16_t>(&maxTraceBidMessages),
+         "maximum bid messages to trace per second")
+        ("min-trace-auction-messages", value<uint16_t>(&minTraceAuctionMessages),
+         "minimum auction messages to trace per second")
+        ("min-trace-bid-messages", value<uint16_t>(&minTraceBidMessages),
+         "minimum bids messages to trace per second")
+        ("trace-all-auction-messages", value<bool>(&traceAllAuctionMessages),
+         "trace messages for all auctions")
+        ("trace-all-bid-messages", value<bool>(&traceAllBidMessages),
+         "trace messages for all bids");
 
     options_description all_opt = opts;
     all_opt
@@ -148,8 +176,16 @@ init()
                                       minTraceBidMetrics,
                                       traceAllAuctionMetrics,
                                       traceAllBidMetrics,
-                                      traceAuctionMessages,
-                                      traceBidMessages);
+                                      maxSlowModeTraceAuctionMessages,
+                                      maxSlowModeTraceBidMessages,
+                                      minSlowModeTraceAuctionMessages,
+                                      minSlowModeTraceBidMessages,
+                                      maxTraceAuctionMessages,
+                                      maxTraceBidMessages,
+                                      minTraceAuctionMessages,
+                                      minTraceBidMessages,
+                                      traceAllAuctionMessages,
+                                      traceAllBidMessages);
     router->init();
 
     banker = std::make_shared<SlaveBanker>(proxies->zmqContext,

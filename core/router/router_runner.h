@@ -26,15 +26,37 @@ struct RouterRunner {
 
     ServiceProxyArguments serviceArgs;
     std::vector<std::string> logUris;  ///< TODO: zookeeper
-
-    //std::string routerConfigurationFile;
     std::string exchangeConfigurationFile;
+
+    void doOptions(int argc, char ** argv,
+                   const boost::program_options::options_description & opts
+                   = boost::program_options::options_description());
+
+    std::shared_ptr<ServiceProxies> proxies;
+    std::shared_ptr<SlaveBanker> banker;
+    std::shared_ptr<Router> router;
+    Json::Value exchangeConfig;
+
+    void init();
+
+    void start();
+
+    void shutdown();
+
+    /*************************************************************************/
+    /* CONFIGURATION                                                         */
+    /*************************************************************************/
+
     float lossSeconds;
 
     bool logAuctions;
     bool logBids;
 
     float maxBidPrice;
+
+    /*************************************************************************/
+    /* TRACE METRICS (GRAPHITE)                                              */
+    /*************************************************************************/
 
     /* Metric tracing limits per second - slow mode.
        Perhaps higher than normal mode to assist in diagnosing slow mode condition.
@@ -52,27 +74,39 @@ struct RouterRunner {
     uint16_t minTraceAuctionMetrics;                    // default =   50
     uint16_t minTraceBidMetrics;                        // default =   25
 
+    /* Force metric tracing (within max limits) - normal + slow mode.
+       TODO: Consider adding separate slow mode controls.
+       TODO: Convert to a probability control for randomization,
+             replace: auction->id.hash() % 10 == 0 */
     bool traceAllAuctionMetrics;
     bool traceAllBidMetrics;
 
-    bool traceAuctionMessages;
-    bool traceBidMessages;
+    /*************************************************************************/
+    /* TRACE MESSAGES                                                        */
+    /*************************************************************************/
 
-    void doOptions(int argc, char ** argv,
-                   const boost::program_options::options_description & opts
-                   = boost::program_options::options_description());
+    /* Message tracing limits per second - slow mode.
+       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
+       Avoid max = 0 (unlimited) at high QPS. */
+    uint16_t maxSlowModeTraceAuctionMessages;           // default =    1,  0 = unlimited
+    uint16_t maxSlowModeTraceBidMessages;               // default =    1,  0 = unlimited
+    uint16_t minSlowModeTraceAuctionMessages;           // default =    0
+    uint16_t minSlowModeTraceBidMessages;               // default =    0
 
-    std::shared_ptr<ServiceProxies> proxies;
-    std::shared_ptr<SlaveBanker> banker;
-    std::shared_ptr<Router> router;
-    Json::Value exchangeConfig;
+    /* Message tracing limits per second - normal mode.
+       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
+       Avoid max = 0 (unlimited) at high QPS. */
+    uint16_t maxTraceAuctionMessages;                   // default =    0,  0 = unlimited
+    uint16_t maxTraceBidMessages;                       // default =    0,  0 = unlimited
+    uint16_t minTraceAuctionMessages;                   // default =    0
+    uint16_t minTraceBidMessages;                       // default =    0
 
-    void init();
-
-    void start();
-
-    void shutdown();
-
+    /* Force message tracing (within max limits) - normal + slow mode.
+       TODO: Consider adding separate slow mode controls.
+       TODO: Convert to a probability control for randomization,
+             replace: auction->id.hash() % 10 == 0 */
+    bool traceAllAuctionMessages;
+    bool traceAllBidMessages;
 };
 
 } // namespace RTBKIT
