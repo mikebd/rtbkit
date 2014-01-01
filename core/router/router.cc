@@ -54,13 +54,10 @@ bool
 enableTrace(const bool countThisSecond, const bool maxTrace, const bool minTrace,
             const bool traceAll, const Id & auctionId)
 {
-    const bool maxTraceExceeded = maxTrace > 0 && countThisSecond > maxTrace;
-    const bool minTraceExceeded = countThisSecond > minTrace;
-
     return
-        (! maxTraceExceeded) &&
+        (countThisSecond <= maxTrace) &&
         (traceAll ||
-            (! minTraceExceeded) ||
+            (countThisSecond <= minTrace) ||
             (auctionId.hash() % 10 == 0));
 }
 
