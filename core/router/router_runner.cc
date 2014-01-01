@@ -91,13 +91,13 @@ doOptions(int argc, char ** argv,
         ("max-bid-price", value(&maxBidPrice),
          "maximum bid price accepted by router")
         // Trace Metrics (Graphite):
-        ("max-slow-mode-trace-auction-metrics", value<uint16_t>(&maxSlowModeTraceAuctionMetrics),
+        ("max-slow-trace-auction-metrics", value<uint16_t>(&maxSlowModeTraceAuctionMetrics),
          "maximum auction metrics to trace per second in slow mode")
-        ("max-slow-mode-trace-bid-metrics", value<uint16_t>(&maxSlowModeTraceBidMetrics),
+        ("max-slow-trace-bid-metrics", value<uint16_t>(&maxSlowModeTraceBidMetrics),
          "maximum bid metrics to trace per second in slow mode")
-        ("min-slow-mode-trace-auction-metrics", value<uint16_t>(&minSlowModeTraceAuctionMetrics),
+        ("min-slow-trace-auction-metrics", value<uint16_t>(&minSlowModeTraceAuctionMetrics),
          "minimum auction metrics to trace per second in slow mode")
-        ("min-slow-mode-trace-bid-metrics", value<uint16_t>(&minSlowModeTraceBidMetrics),
+        ("min-slow-trace-bid-metrics", value<uint16_t>(&minSlowModeTraceBidMetrics),
          "minimum bids metrics to trace per second in slow mode")
         ("max-trace-auction-metrics", value<uint16_t>(&maxTraceAuctionMetrics),
          "maximum auction metrics to trace per second")
@@ -112,13 +112,13 @@ doOptions(int argc, char ** argv,
         ("trace-all-bid-metrics", value<bool>(&traceAllBidMetrics),
          "trace metrics for all bids")
         // Trace Messages:
-        ("max-slow-mode-trace-auction-messages", value<uint16_t>(&maxSlowModeTraceAuctionMessages),
+        ("max-slow-trace-auction-messages", value<uint16_t>(&maxSlowModeTraceAuctionMessages),
          "maximum auction messages to trace per second in slow mode")
-        ("max-slow-mode-trace-bid-messages", value<uint16_t>(&maxSlowModeTraceBidMessages),
+        ("max-slow-trace-bid-messages", value<uint16_t>(&maxSlowModeTraceBidMessages),
          "maximum bid messages to trace per second in slow mode")
-        ("min-slow-mode-trace-auction-messages", value<uint16_t>(&minSlowModeTraceAuctionMessages),
+        ("min-slow-trace-auction-messages", value<uint16_t>(&minSlowModeTraceAuctionMessages),
          "minimum auction messages to trace per second in slow mode")
-        ("min-slow-mode-trace-bid-messages", value<uint16_t>(&minSlowModeTraceBidMessages),
+        ("min-slow-trace-bid-messages", value<uint16_t>(&minSlowModeTraceBidMessages),
          "minimum bids messages to trace per second in slow mode")
         ("max-trace-auction-messages", value<uint16_t>(&maxTraceAuctionMessages),
          "maximum auction messages to trace per second")
