@@ -58,7 +58,7 @@ enableTrace(const int countThisSecond, const TraceSettings & traceSettings,
         (countThisSecond <= traceSettings.max) &&
         (traceSettings.all ||
             (countThisSecond <= traceSettings.min) ||
-            (auctionId.hash() % 10 == 0));
+            (auctionId.hash() % traceSettings.mod  == 0));
 }
 
 
@@ -131,7 +131,12 @@ dumpSpot(Id spot) const
 ostream &
 operator<<(ostream & os, const TraceSettings & ts)
 {
-    os << "min=" << ts.min << ", max=" << ts.max << ", all=" << (ts.all ? "yes" : "no") << endl;
+    os
+        << "min=" << ts.min
+        << ", max=" << ts.max
+        << ", mod=" << ts.mod
+        << ", all=" << (ts.all ? "yes" : "no")
+        << endl;
 
     return os;
 }
