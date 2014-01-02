@@ -37,7 +37,7 @@ struct RouterRunner {
     std::shared_ptr<Router> router;
     Json::Value exchangeConfig;
 
-    void init();
+    bool init();
 
     void start();
 
@@ -46,6 +46,8 @@ struct RouterRunner {
     /*************************************************************************/
     /* CONFIGURATION                                                         */
     /*************************************************************************/
+
+    bool checkConfig;
 
     float lossSeconds;
 

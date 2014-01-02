@@ -40,6 +40,7 @@ static inline Json::Value loadJsonFromFile(const std::string & filename)
 RouterRunner::
 RouterRunner() :
     exchangeConfigurationFile("examples/router-config.json"),
+    checkConfig(false),
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
@@ -90,6 +91,8 @@ doOptions(int argc, char ** argv,
 
     options_description router_options("Router options");
     router_options.add_options()
+        ("check-config", value<bool>(&checkConfig)->zero_tokens(),
+         "trace and validate configuration, exit without initializing or starting")
         ("loss-seconds,l", value<float>(&lossSeconds),
          "number of seconds after which a loss is assumed")
         ("log-uri", value<vector<string> >(&logUris),
@@ -182,7 +185,7 @@ doOptions(int argc, char ** argv,
     }
 }
 
-void
+bool
 RouterRunner::
 init()
 {
@@ -205,14 +208,25 @@ init()
                                       traceSettingsAuctionMessages,
                                       traceSettingsBidMessages);
 
-    router->init();
+    bool initialized = false;
 
-    banker = std::make_shared<SlaveBanker>(proxies->zmqContext,
-                                           proxies->config,
-                                           router->serviceName() + ".slaveBanker");
+    if (checkConfig) {
+        // Trace and validate configuration without initializing and starting the service
+        (void) router->checkConfig(Router::TraceConfig::All);
+    } else if(router->checkConfig(Router::TraceConfig::Error)) {
+        router->init();
 
-    router->setBanker(banker);
-    router->bindTcp();
+        banker = std::make_shared<SlaveBanker>(proxies->zmqContext,
+                                               proxies->config,
+                                               router->serviceName() + ".slaveBanker");
+
+        router->setBanker(banker);
+        router->bindTcp();
+
+        initialized = true;
+    }
+
+    return initialized;
 }
 
 void
@@ -240,14 +254,15 @@ int main(int argc, char ** argv)
     RouterRunner runner;
 
     runner.doOptions(argc, argv);
-    runner.init();
-    runner.start();
+    if (runner.init()) {
+        runner.start();
 
-    runner.router->forAllExchanges([](std::shared_ptr<ExchangeConnector> const & item) {
-        item->enableUntil(Date::positiveInfinity());
-    });
+        runner.router->forAllExchanges([](std::shared_ptr<ExchangeConnector> const & item) {
+            item->enableUntil(Date::positiveInfinity());
+        });
 
-    for (;;) {
-        ML::sleep(10.0);
+        for (;;) {
+            ML::sleep(10.0);
+        }
     }
 }

@@ -125,6 +125,19 @@ dumpSpot(Id spot) const
 
 
 /*****************************************************************************/
+/* TRACE SETTINGS                                                            */
+/*****************************************************************************/
+
+ostream &
+operator<<(ostream & os, const TraceSettings & ts)
+{
+    os << "min=" << ts.min << ", max=" << ts.max << ", all=" << (ts.all ? "yes" : "no") << endl;
+
+    return os;
+}
+
+
+/*****************************************************************************/
 /* ROUTER                                                                    */
 /*****************************************************************************/
 
@@ -255,6 +268,34 @@ Router(std::shared_ptr<ServiceProxies> services,
       traceSettingsAuctionMessages(traceSettingsAuctionMessages),
       traceSettingsBidMessages(traceSettingsBidMessages)
 {
+}
+
+bool
+Router::
+checkConfig(const TraceConfig traceConfig /* = TraceConfig::None */) const
+{
+    bool validConfig = true;
+
+    // TODO: Add configuration validation
+
+    // TODO: Complete the configuration trace output
+
+    if (traceConfig == TraceConfig::All) {
+        cerr << "Router Configuration:" << endl;
+        cerr << "    Slow Mode Trace Auction Metrics : " << slowModeTraceSettingsAuctionMetrics;
+        cerr << "    Slow Mode Trace Bid Metrics     : " << slowModeTraceSettingsBidMetrics;
+        cerr << "              Trace Auction Metrics : " << traceSettingsAuctionMetrics;
+        cerr << "              Trace Bid Metrics     : " << traceSettingsBidMetrics;
+        cerr << "    Slow Mode Trace Auction Messages: " << slowModeTraceSettingsAuctionMessages;
+        cerr << "    Slow Mode Trace Bid Messages    : " << slowModeTraceSettingsBidMessages;
+        cerr << "              Trace Auction Messages: " << traceSettingsAuctionMessages;
+        cerr << "              Trace Bid Messages    : " << traceSettingsBidMessages;
+    }
+
+    if (! validConfig)
+        cerr << "ERROR: Invalid Configuration" << endl;
+
+    return validConfig;
 }
 
 void

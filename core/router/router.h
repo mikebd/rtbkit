@@ -102,6 +102,8 @@ struct TraceSettings {
     bool all;
 };
 
+ostream & operator<<(ostream & os, const TraceSettings & ts);
+
 /*****************************************************************************/
 /* ROUTER                                                                    */
 /*****************************************************************************/
@@ -232,6 +234,10 @@ struct Router : public ServiceBase,
 
     std::shared_ptr<Banker> getBanker() const;
     void setBanker(const std::shared_ptr<Banker> & newBanker);
+
+    /** Trace and validate configuration, return true iff the configuration is valid. */
+    enum class TraceConfig { None, Error, All };
+    bool checkConfig(TraceConfig traceConfig = TraceConfig::None) const;
 
     /** Initialize all of the internal data structures and configuration. */
     void init();
