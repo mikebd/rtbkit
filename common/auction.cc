@@ -212,7 +212,14 @@ createDescription(AuctionResponseDescription & d) {
 
 Auction::
 Auction()
-    : isZombie(false), slowMode(false), exchangeConnector(nullptr), data(new Data())
+    : isZombie(false),
+      slowMode(false),
+      traceAuctionMetrics(false),
+      traceBidMetrics(false),
+      traceAuctionMessages(false),
+      traceBidMessages(false),
+      exchangeConnector(nullptr),
+      data(new Data())
 {
 }
 
@@ -226,6 +233,10 @@ Auction(ExchangeConnector * exchangeConnector,
         Date expiry)
     : isZombie(false), start(start), expiry(expiry),
       slowMode(false),
+      traceAuctionMetrics(false),
+      traceBidMetrics(false),
+      traceAuctionMessages(false),
+      traceBidMessages(false),
       request(request),
       requestStr(requestStr),
       requestStrFormat(requestStrFormat),

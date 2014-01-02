@@ -69,6 +69,10 @@ struct Auction : public std::enable_shared_from_this<Auction> {
     Date inPrepro, outOfPrepro;
     Date doneAugmenting;
     Date inStartBidding;
+    bool traceAuctionMetrics;
+    bool traceBidMetrics;
+    bool traceAuctionMessages;
+    bool traceBidMessages;
 
     Id id;
     std::shared_ptr<BidRequest>  request;

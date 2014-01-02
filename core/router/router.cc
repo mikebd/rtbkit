@@ -1388,10 +1388,12 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    const bool traceAuctionMetrics = enableTrace(
-        auction->slowMode ? slowModeAuctionCountThisSecond : auctionCountThisSecond,
-        auction->slowMode ? slowModeTraceSettingsAuctionMetrics : traceSettingsAuctionMetrics,
-        auction->id);
+    const bool traceAuctionMetrics =
+        auction->traceAuctionMetrics =
+        enableTrace(
+            auction->slowMode ? slowModeAuctionCountThisSecond : auctionCountThisSecond,
+            auction->slowMode ? slowModeTraceSettingsAuctionMetrics : traceSettingsAuctionMetrics,
+            auction->id);
 
     AgentConfig::RequestFilterCache cache(*auction->request);
 
@@ -1560,10 +1562,12 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         else
             ++bidCountThisSecond;
 
-        const bool traceBidMetrics = enableTrace(
-            auction->slowMode ? slowModeBidCountThisSecond : bidCountThisSecond,
-            auction->slowMode ? slowModeTraceSettingsBidMetrics : traceSettingsBidMetrics,
-            auction->id);
+        const bool traceBidMetrics =
+            auction->traceBidMetrics =
+            enableTrace(
+                auction->slowMode ? slowModeBidCountThisSecond : bidCountThisSecond,
+                auction->slowMode ? slowModeTraceSettingsBidMetrics : traceSettingsBidMetrics,
+                auction->id);
 
         const auto& augList = augInfo->auction->augmentations;
 
