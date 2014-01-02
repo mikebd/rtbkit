@@ -102,7 +102,7 @@ struct TraceSettings {
     uint16_t max;       // maximum count per second
     uint16_t min;       // minimum count per second
     uint16_t mod;       // modulus test for (min, max] - hit if: Id.hash() % mod == 0
-    bool all;           // all = override mod test (remains constrained by max)
+                        // mod == 1 is the same as 'all'
 };
 
 ostream & operator<<(std::ostream & os, const TraceSettings & ts);
@@ -157,44 +157,36 @@ struct Router : public ServiceBase,
            TraceSettings slowModeTraceSettingsAuctionMetrics = TraceSettings{
                DefaultMaxSlowModeTraceAuctionMetrics,
                DefaultMinSlowModeTraceAuctionMetrics,
-               DefaultModSlowModeTraceAuctionMetrics,
-               false},
+               DefaultModSlowModeTraceAuctionMetrics},
            TraceSettings slowModeTraceSettingsBidMetrics = TraceSettings{
                DefaultMaxSlowModeTraceBidMetrics,
                DefaultMinSlowModeTraceBidMetrics,
-               DefaultModSlowModeTraceBidMetrics,
-               false},
+               DefaultModSlowModeTraceBidMetrics},
            TraceSettings traceSettingsAuctionMetrics = TraceSettings{
                DefaultMaxTraceAuctionMetrics,
                DefaultMinTraceAuctionMetrics,
-               DefaultModTraceAuctionMetrics,
-               false},
+               DefaultModTraceAuctionMetrics},
            TraceSettings traceSettingsBidMetrics = TraceSettings{
                DefaultMaxTraceBidMetrics,
                DefaultMinTraceBidMetrics,
-               DefaultModTraceBidMetrics,
-               false},
+               DefaultModTraceBidMetrics},
            // Trace Messages:
            TraceSettings slowModeTraceSettingsAuctionMessages = TraceSettings{
                DefaultMaxSlowModeTraceAuctionMessages,
                DefaultMinSlowModeTraceAuctionMessages,
-               DefaultModSlowModeTraceAuctionMessages,
-               false},
+               DefaultModSlowModeTraceAuctionMessages},
            TraceSettings slowModeTraceSettingsBidMessages = TraceSettings{
                DefaultMaxSlowModeTraceBidMessages,
                DefaultMinSlowModeTraceBidMessages,
-               DefaultModSlowModeTraceBidMessages,
-               false},
+               DefaultModSlowModeTraceBidMessages},
            TraceSettings traceSettingsAuctionMessages = TraceSettings{
                DefaultMaxTraceAuctionMessages,
                DefaultMinTraceAuctionMessages,
-               DefaultModTraceAuctionMessages,
-               false},
+               DefaultModTraceAuctionMessages},
            TraceSettings traceSettingsBidMessages = TraceSettings{
                DefaultMaxTraceBidMessages,
                DefaultMinTraceBidMessages,
-               DefaultModTraceBidMessages,
-               false}
+               DefaultModTraceBidMessages}
            );
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
@@ -208,44 +200,36 @@ struct Router : public ServiceBase,
            TraceSettings slowModeTraceSettingsAuctionMetrics = TraceSettings{
                DefaultMaxSlowModeTraceAuctionMetrics,
                DefaultMinSlowModeTraceAuctionMetrics,
-               DefaultModSlowModeTraceAuctionMetrics,
-               false},
+               DefaultModSlowModeTraceAuctionMetrics},
            TraceSettings slowModeTraceSettingsBidMetrics = TraceSettings{
                DefaultMaxSlowModeTraceBidMetrics,
                DefaultMinSlowModeTraceBidMetrics,
-               DefaultModSlowModeTraceBidMetrics,
-               false},
+               DefaultModSlowModeTraceBidMetrics},
            TraceSettings traceSettingsAuctionMetrics = TraceSettings{
                DefaultMaxTraceAuctionMetrics,
                DefaultMinTraceAuctionMetrics,
-               DefaultModTraceAuctionMetrics,
-               false},
+               DefaultModTraceAuctionMetrics},
            TraceSettings traceSettingsBidMetrics = TraceSettings{
                DefaultMaxTraceBidMetrics,
                DefaultMinTraceBidMetrics,
-               DefaultModTraceBidMetrics,
-               false},
+               DefaultModTraceBidMetrics},
            // Trace Messages:
            TraceSettings slowModeTraceSettingsAuctionMessages = TraceSettings{
                DefaultMaxSlowModeTraceAuctionMessages,
                DefaultMinSlowModeTraceAuctionMessages,
-               DefaultModSlowModeTraceAuctionMessages,
-               false},
+               DefaultModSlowModeTraceAuctionMessages},
            TraceSettings slowModeTraceSettingsBidMessages = TraceSettings{
                DefaultMaxSlowModeTraceBidMessages,
                DefaultMinSlowModeTraceBidMessages,
-               DefaultModSlowModeTraceBidMessages,
-               false},
+               DefaultModSlowModeTraceBidMessages},
            TraceSettings traceSettingsAuctionMessages = TraceSettings{
                DefaultMaxTraceAuctionMessages,
                DefaultMinTraceAuctionMessages,
-               DefaultModTraceAuctionMessages,
-               false},
+               DefaultModTraceAuctionMessages},
            TraceSettings traceSettingsBidMessages = TraceSettings{
                DefaultMaxTraceBidMessages,
                DefaultMinTraceBidMessages,
-               DefaultModTraceBidMessages,
-               false}
+               DefaultModTraceBidMessages}
            );
 
     ~Router();

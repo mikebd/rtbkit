@@ -49,44 +49,36 @@ RouterRunner() :
     slowModeTraceSettingsAuctionMetrics{
         Router::DefaultMaxSlowModeTraceAuctionMetrics,
         Router::DefaultMinSlowModeTraceAuctionMetrics,
-        Router::DefaultModSlowModeTraceAuctionMetrics,
-        false},
+        Router::DefaultModSlowModeTraceAuctionMetrics},
     slowModeTraceSettingsBidMetrics{
         Router::DefaultMaxSlowModeTraceBidMetrics,
         Router::DefaultMinSlowModeTraceBidMetrics,
-        Router::DefaultModSlowModeTraceBidMetrics,
-        false},
+        Router::DefaultModSlowModeTraceBidMetrics},
     traceSettingsAuctionMetrics{
         Router::DefaultMaxTraceAuctionMetrics,
         Router::DefaultMinTraceAuctionMetrics,
-        Router::DefaultModTraceAuctionMetrics,
-        false},
+        Router::DefaultModTraceAuctionMetrics},
     traceSettingsBidMetrics{
         Router::DefaultMaxTraceBidMetrics,
         Router::DefaultMinTraceBidMetrics,
-        Router::DefaultModTraceBidMetrics,
-        false},
+        Router::DefaultModTraceBidMetrics},
     // Trace Messages:
     slowModeTraceSettingsAuctionMessages{
         Router::DefaultMaxSlowModeTraceAuctionMessages,
         Router::DefaultMinSlowModeTraceAuctionMessages,
-        Router::DefaultModSlowModeTraceAuctionMessages,
-        false},
+        Router::DefaultModSlowModeTraceAuctionMessages},
     slowModeTraceSettingsBidMessages{
         Router::DefaultMaxSlowModeTraceBidMessages,
         Router::DefaultMinSlowModeTraceBidMessages,
-        Router::DefaultModSlowModeTraceBidMessages,
-        false},
+        Router::DefaultModSlowModeTraceBidMessages},
     traceSettingsAuctionMessages{
         Router::DefaultMaxTraceAuctionMessages,
         Router::DefaultMinTraceAuctionMessages,
-        Router::DefaultModTraceAuctionMessages,
-        false},
+        Router::DefaultModTraceAuctionMessages},
     traceSettingsBidMessages{
         Router::DefaultMaxTraceBidMessages,
         Router::DefaultMinTraceBidMessages,
-        Router::DefaultModTraceBidMessages,
-        false}
+        Router::DefaultModTraceBidMessages}
 {
 }
 
@@ -120,36 +112,28 @@ doOptions(int argc, char ** argv,
             ("max-slow-trace-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.max),
              "maximum auction metrics to trace per second in slow mode")
             ("mod-slow-trace-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-slow-trace-auction-metrics", value<bool>(&slowModeTraceSettingsAuctionMetrics.all)->zero_tokens(),
-             "trace metrics for all auctions (up to max limit) in slow mode")
+             "modulus: Id.hash() % <mod-...> == 0")
             // Slow - Bid:
             ("min-slow-trace-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.min),
              "minimum bids metrics to trace per second in slow mode")
             ("max-slow-trace-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.max),
              "maximum bid metrics to trace per second in slow mode")
             ("mod-slow-trace-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-slow-trace-bid-metrics", value<bool>(&slowModeTraceSettingsBidMetrics.all)->zero_tokens(),
-             "trace metrics for all bids (up to max limit) in slow mode")
+             "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Auction:
             ("min-trace-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.min),
              "minimum auction metrics to trace per second")
             ("max-trace-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.max),
              "maximum auction metrics to trace per second")
             ("mod-trace-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-trace-auction-metrics", value<bool>(&traceSettingsAuctionMetrics.all)->zero_tokens(),
-             "trace metrics for all auctions (up to max limit)")
+             "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Bid:
             ("min-trace-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.min),
              "minimum bids metrics to trace per second")
             ("max-trace-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.max),
              "maximum bid metrics to trace per second")
             ("mod-trace-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-trace-bid-metrics", value<bool>(&traceSettingsBidMetrics.all)->zero_tokens(),
-             "trace metrics for all bids (up to max limit)")
+             "modulus: Id.hash() % <mod-...> == 0")
         // Trace Messages:
             // Slow - Auction:
             ("min-slow-trace-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.min),
@@ -157,36 +141,28 @@ doOptions(int argc, char ** argv,
             ("max-slow-trace-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.max),
              "maximum auction messages to trace per second in slow mode")
             ("mod-slow-trace-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-slow-trace-auction-messages", value<bool>(&slowModeTraceSettingsAuctionMessages.all)->zero_tokens(),
-             "trace messages for all auctions (up to max limit) in slow mode")
+             "modulus: Id.hash() % <mod-...> == 0")
             // Slow - Bid:
             ("min-slow-trace-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.min),
              "minimum bids messages to trace per second in slow mode")
             ("max-slow-trace-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.max),
              "maximum bid messages to trace per second in slow mode")
             ("mod-slow-trace-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-slow-trace-bid-messages", value<bool>(&slowModeTraceSettingsBidMessages.all)->zero_tokens(),
-             "trace messages for all bids (up to max limit) in slow mode")
+             "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Auction:
             ("min-trace-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.min),
              "minimum auction messages to trace per second")
             ("max-trace-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.max),
              "maximum auction messages to trace per second")
             ("mod-trace-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-trace-auction-messages", value<bool>(&traceSettingsAuctionMessages.all)->zero_tokens(),
-             "trace messages for all auctions (up to max limit)")
+             "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Bid:
             ("min-trace-bid-messages", value<uint16_t>(&traceSettingsBidMessages.min),
              "minimum bids messages to trace per second")
             ("max-trace-bid-messages", value<uint16_t>(&traceSettingsBidMessages.max),
              "maximum bid messages to trace per second")
             ("mod-trace-bid-messages", value<uint16_t>(&traceSettingsBidMessages.mod),
-             "modulus - hit if: Id.hash() % <mod-...> == 0")
-            ("all-trace-bid-messages", value<bool>(&traceSettingsBidMessages.all)->zero_tokens(),
-             "trace messages for all bids (up to max limit)");
+             "modulus: Id.hash() % <mod-...> == 0");
 
     options_description all_opt = opts;
     all_opt

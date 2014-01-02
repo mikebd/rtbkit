@@ -56,9 +56,9 @@ enableTrace(const int countThisSecond, const TraceSettings & traceSettings,
 {
     return
         (countThisSecond <= traceSettings.max) &&
-        (traceSettings.all ||
+        ((traceSettings.mod == 1) ||
             (countThisSecond <= traceSettings.min) ||
-            (auctionId.hash() % traceSettings.mod  == 0));
+            (auctionId.hash() % traceSettings.mod == 0));
 }
 
 
@@ -152,8 +152,7 @@ operator<<(ostream & os, const TraceSettings & ts)
     os
         << "min=" << ts.min
         << ", max=" << ts.max
-        << ", mod=" << ts.mod
-        << ", all=" << (ts.all ? "yes" : "no")
+        << ", mod=" << ts.mod << ((ts.mod == 1) ? " (all)" : "")
         << endl;
 
     return os;
