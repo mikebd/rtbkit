@@ -88,6 +88,7 @@ struct AuctionDebugInfo {
         std::vector<std::string> args;
     };
 
+    std::weak_ptr<Auction> auction;
     std::vector<Message> messages;
 };
 
@@ -816,6 +817,19 @@ public:
     /* DEBUGGING                                                             */
     /*************************************************************************/
 
+    /** The first call for an auction should use this to capture the auction reference */
+    void initialDebugAuction(const std::shared_ptr<Auction> & auction, const std::string & type,
+                             const std::vector<std::string> & args
+                             = std::vector<std::string>())
+    {
+        if (JML_LIKELY(!doDebug)) return;
+        debugAuctionImpl(auction, type, args);
+    }
+
+    void debugAuctionImpl(const std::shared_ptr<Auction> & auction, const std::string & type,
+                          const std::vector<std::string> & args);
+
+    /** Subsequent calls for an auction should use this */
     void debugAuction(const Id & auction, const std::string & type,
                       const std::vector<std::string> & args
                       = std::vector<std::string>())

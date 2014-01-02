@@ -1805,7 +1805,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             }
         }
 
-        debugAuction(auctionId, "AUCTION");
+        initialDebugAuction(auction, "AUCTION");
     } catch (const std::exception & exc) {
         cerr << "warning: auction threw exception: " << exc.what() << endl;
         if (augInfo)
@@ -2936,28 +2936,61 @@ throwException(const std::string & key, const std::string & fmt, ...)
 
 void
 Router::
-debugAuctionImpl(const Id & auction, const std::string & type,
+debugAuctionImpl(const shared_ptr<Auction> & auction, const std::string & type,
+                 const std::vector<std::string> & args)
+{
+    const Id & auctionId = auction->id;
+
+    Date now = Date::now();
+    boost::unique_lock<ML::Spinlock> guard(debugLock);
+    AuctionDebugInfo & entry
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
+
+    entry.auction = auction;
+    entry.addAuctionEvent(now, type, args);
+
+    // TODO: Distinguish between auction and bid messages
+    // TODO: Add args to the verbose trace output
+    if (auction->traceAuctionMessages)
+        cerr << "auction=" << auctionId << ", message=" << type << endl;
+}
+
+void
+Router::
+debugAuctionImpl(const Id & auctionId, const std::string & type,
                  const std::vector<std::string> & args)
 {
     Date now = Date::now();
     boost::unique_lock<ML::Spinlock> guard(debugLock);
     AuctionDebugInfo & entry
-        = debugInfo.access(auction, now.plusSeconds(30.0));
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
 
     entry.addAuctionEvent(now, type, args);
+
+    // TODO: Distinguish between auction and bid messages
+    // TODO: Add args to the verbose trace output
+    const auto & auction = entry.auction.lock();
+    if (auction && auction->traceAuctionMessages)
+        cerr << "auction=" << auction->id << ", message=" << type << endl;
 }
 
 void
 Router::
-debugSpotImpl(const Id & auction, const Id & spot, const std::string & type,
+debugSpotImpl(const Id & auctionId, const Id & spotId, const std::string & type,
               const std::vector<std::string> & args)
 {
     Date now = Date::now();
     boost::unique_lock<ML::Spinlock> guard(debugLock);
     AuctionDebugInfo & entry
-        = debugInfo.access(auction, now.plusSeconds(30.0));
+        = debugInfo.access(auctionId, now.plusSeconds(30.0));
 
-    entry.addSpotEvent(spot, now, type, args);
+    entry.addSpotEvent(spotId, now, type, args);
+
+    // TODO: Distinguish between auction and bid messages
+    // TODO: Add args to the verbose trace output
+    const auto & auction = entry.auction.lock();
+    if (auction && auction->traceAuctionMessages)
+        cerr << "auction=" << auction->id << ", spot=" << spotId << ", message=" << type << endl;
 }
 
 void
