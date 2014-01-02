@@ -124,8 +124,8 @@ struct Router : public ServiceBase,
         DefaultMinTraceAuctionMetrics               =   50,
         DefaultMinTraceBidMetrics                   =   25,
 
-        DefaultMaxSlowModeTraceAuctionMessages      =    1,
-        DefaultMaxSlowModeTraceBidMessages          =    1,
+        DefaultMaxSlowModeTraceAuctionMessages      =    0,
+        DefaultMaxSlowModeTraceBidMessages          =    0,
         DefaultMinSlowModeTraceAuctionMessages      =    0,
         DefaultMinSlowModeTraceBidMessages          =    0,
 
