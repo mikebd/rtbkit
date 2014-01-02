@@ -54,59 +54,17 @@ struct RouterRunner {
 
     float maxBidPrice;
 
-    /*************************************************************************/
-    /* TRACE METRICS (GRAPHITE)                                              */
-    /*************************************************************************/
-
-    /* Metric tracing limits per second - slow mode.
-       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
-       Avoid a large max at high QPS. */
-    uint16_t maxSlowModeTraceAuctionMetrics;            // default = 1000
-    uint16_t maxSlowModeTraceBidMetrics;                // default =  500
-    uint16_t minSlowModeTraceAuctionMetrics;            // default =  100
-    uint16_t minSlowModeTraceBidMetrics;                // default =   50
-
-    /* Metric tracing limits per second - normal mode.
-       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
-       Avoid a large max at high QPS. */
-    uint16_t maxTraceAuctionMetrics;                    // default =  500
-    uint16_t maxTraceBidMetrics;                        // default =  250
-    uint16_t minTraceAuctionMetrics;                    // default =   50
-    uint16_t minTraceBidMetrics;                        // default =   25
-
-    /* Force metric tracing (within max limits) - normal + slow mode.
-       TODO: Consider adding separate slow mode controls.
-       TODO: Convert to a probability control for randomization,
-             replace: auction->id.hash() % 10 == 0 */
-    bool traceAllAuctionMetrics;
-    bool traceAllBidMetrics;
-
-    /*************************************************************************/
-    /* TRACE MESSAGES                                                        */
-    /*************************************************************************/
-
-    /* Message tracing limits per second - slow mode.
-       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
-       Avoid a large max at high QPS. */
-    uint16_t maxSlowModeTraceAuctionMessages;           // default =    0
-    uint16_t maxSlowModeTraceBidMessages;               // default =    0
-    uint16_t minSlowModeTraceAuctionMessages;           // default =    0
-    uint16_t minSlowModeTraceBidMessages;               // default =    0
-
-    /* Message tracing limits per second - normal mode.
-       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
-       Avoid a large max at high QPS. */
-    uint16_t maxTraceAuctionMessages;                   // default =    0
-    uint16_t maxTraceBidMessages;                       // default =    0
-    uint16_t minTraceAuctionMessages;                   // default =    0
-    uint16_t minTraceBidMessages;                       // default =    0
-
-    /* Force message tracing (within max limits) - normal + slow mode.
-       TODO: Consider adding separate slow mode controls.
-       TODO: Convert to a probability control for randomization,
-             replace: auction->id.hash() % 10 == 0 */
-    bool traceAllAuctionMessages;
-    bool traceAllBidMessages;
+    TraceSettings
+        // Trace Metrics (Graphite):
+        slowModeTraceSettingsAuctionMetrics,
+        slowModeTraceSettingsBidMetrics,
+        traceSettingsAuctionMetrics,
+        traceSettingsBidMetrics,
+        // Trace Messages;
+        slowModeTraceSettingsAuctionMessages,
+        slowModeTraceSettingsBidMessages,
+        traceSettingsAuctionMessages,
+        traceSettingsBidMessages;
 };
 
 } // namespace RTBKIT

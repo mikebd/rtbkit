@@ -91,6 +91,17 @@ struct AuctionDebugInfo {
     std::vector<Message> messages;
 };
 
+
+/*****************************************************************************/
+/* TRACE SETTINGS                                                            */
+/*****************************************************************************/
+
+struct TraceSettings {
+    uint16_t max;
+    uint16_t min;
+    bool all;
+};
+
 /*****************************************************************************/
 /* ROUTER                                                                    */
 /*****************************************************************************/
@@ -129,26 +140,41 @@ struct Router : public ServiceBase,
            bool logAuctions                         = false,
            bool logBids                             = false,
            Amount maxBidAmount                      = USD_CPM(200),
-           uint16_t maxSlowModeTraceAuctionMetrics  = DefaultMaxSlowModeTraceAuctionMetrics,
-           uint16_t maxSlowModeTraceBidMetrics      = DefaultMaxSlowModeTraceBidMetrics,
-           uint16_t minSlowModeTraceAuctionMetrics  = DefaultMinSlowModeTraceAuctionMetrics,
-           uint16_t minSlowModeTraceBidMetrics      = DefaultMinSlowModeTraceBidMetrics,
-           uint16_t maxTraceAuctionMetrics          = DefaultMaxTraceAuctionMetrics,
-           uint16_t maxTraceBidMetrics              = DefaultMaxTraceBidMetrics,
-           uint16_t minTraceAuctionMetrics          = DefaultMinTraceAuctionMetrics,
-           uint16_t minTraceBidMetrics              = DefaultMinTraceBidMetrics,
-           bool traceAllAuctionMetrics              = false,
-           bool traceAllBidMetrics                  = false,
-           uint16_t maxSlowModeTraceAuctionMessages = DefaultMaxSlowModeTraceAuctionMessages,
-           uint16_t maxSlowModeTraceBidMessages     = DefaultMaxSlowModeTraceBidMessages,
-           uint16_t minSlowModeTraceAuctionMessages = DefaultMinSlowModeTraceAuctionMessages,
-           uint16_t minSlowModeTraceBidMessages     = DefaultMinSlowModeTraceBidMessages,
-           uint16_t maxTraceAuctionMessages         = DefaultMaxTraceAuctionMessages,
-           uint16_t maxTraceBidMessages             = DefaultMaxTraceBidMessages,
-           uint16_t minTraceAuctionMessages         = DefaultMinTraceAuctionMessages,
-           uint16_t minTraceBidMessages             = DefaultMinTraceBidMessages,
-           bool traceAllAuctionMessages             = false,
-           bool traceAllBidMessages                 = false);
+           // Trace Metrics (Graphite):
+           TraceSettings slowModeTraceSettingsAuctionMetrics = TraceSettings{
+               DefaultMaxSlowModeTraceAuctionMetrics,
+               DefaultMinSlowModeTraceAuctionMetrics,
+               false},
+           TraceSettings slowModeTraceSettingsBidMetrics = TraceSettings{
+               DefaultMaxSlowModeTraceBidMetrics,
+               DefaultMinSlowModeTraceBidMetrics,
+               false},
+           TraceSettings traceSettingsAuctionMetrics = TraceSettings{
+               DefaultMaxTraceAuctionMetrics,
+               DefaultMinTraceAuctionMetrics,
+               false},
+           TraceSettings traceSettingsBidMetrics = TraceSettings{
+               DefaultMaxTraceBidMetrics,
+               DefaultMinTraceBidMetrics,
+               false},
+           // Trace Messages:
+           TraceSettings slowModeTraceSettingsAuctionMessages = TraceSettings{
+               DefaultMaxSlowModeTraceAuctionMessages,
+               DefaultMinSlowModeTraceAuctionMessages,
+               false},
+           TraceSettings slowModeTraceSettingsBidMessages = TraceSettings{
+               DefaultMaxSlowModeTraceBidMessages,
+               DefaultMinSlowModeTraceBidMessages,
+               false},
+           TraceSettings traceSettingsAuctionMessages = TraceSettings{
+               DefaultMaxTraceAuctionMessages,
+               DefaultMinTraceAuctionMessages,
+               false},
+           TraceSettings traceSettingsBidMessages = TraceSettings{
+               DefaultMaxTraceBidMessages,
+               DefaultMinTraceBidMessages,
+               false}
+           );
 
     Router(std::shared_ptr<ServiceProxies> services = std::make_shared<ServiceProxies>(),
            const std::string & serviceName          = "router",
@@ -157,26 +183,41 @@ struct Router : public ServiceBase,
            bool logAuctions                         = false,
            bool logBids                             = false,
            Amount maxBidAmount                      = USD_CPM(200),
-           uint16_t maxSlowModeTraceAuctionMetrics  = DefaultMaxSlowModeTraceAuctionMetrics,
-           uint16_t maxSlowModeTraceBidMetrics      = DefaultMaxSlowModeTraceBidMetrics,
-           uint16_t minSlowModeTraceAuctionMetrics  = DefaultMinSlowModeTraceAuctionMetrics,
-           uint16_t minSlowModeTraceBidMetrics      = DefaultMinSlowModeTraceBidMetrics,
-           uint16_t maxTraceAuctionMetrics          = DefaultMaxTraceAuctionMetrics,
-           uint16_t maxTraceBidMetrics              = DefaultMaxTraceBidMetrics,
-           uint16_t minTraceAuctionMetrics          = DefaultMinTraceAuctionMetrics,
-           uint16_t minTraceBidMetrics              = DefaultMinTraceBidMetrics,
-           bool traceAllAuctionMetrics              = false,
-           bool traceAllBidMetrics                  = false,
-           uint16_t maxSlowModeTraceAuctionMessages = DefaultMaxSlowModeTraceAuctionMessages,
-           uint16_t maxSlowModeTraceBidMessages     = DefaultMaxSlowModeTraceBidMessages,
-           uint16_t minSlowModeTraceAuctionMessages = DefaultMinSlowModeTraceAuctionMessages,
-           uint16_t minSlowModeTraceBidMessages     = DefaultMinSlowModeTraceBidMessages,
-           uint16_t maxTraceAuctionMessages         = DefaultMaxTraceAuctionMessages,
-           uint16_t maxTraceBidMessages             = DefaultMaxTraceBidMessages,
-           uint16_t minTraceAuctionMessages         = DefaultMinTraceAuctionMessages,
-           uint16_t minTraceBidMessages             = DefaultMinTraceBidMessages,
-           bool traceAllAuctionMessages             = false,
-           bool traceAllBidMessages                 = false);
+           // Trace Metrics (Graphite):
+           TraceSettings slowModeTraceSettingsAuctionMetrics = TraceSettings{
+               DefaultMaxSlowModeTraceAuctionMetrics,
+               DefaultMinSlowModeTraceAuctionMetrics,
+               false},
+           TraceSettings slowModeTraceSettingsBidMetrics = TraceSettings{
+               DefaultMaxSlowModeTraceBidMetrics,
+               DefaultMinSlowModeTraceBidMetrics,
+               false},
+           TraceSettings traceSettingsAuctionMetrics = TraceSettings{
+               DefaultMaxTraceAuctionMetrics,
+               DefaultMinTraceAuctionMetrics,
+               false},
+           TraceSettings traceSettingsBidMetrics = TraceSettings{
+               DefaultMaxTraceBidMetrics,
+               DefaultMinTraceBidMetrics,
+               false},
+           // Trace Messages:
+           TraceSettings slowModeTraceSettingsAuctionMessages = TraceSettings{
+               DefaultMaxSlowModeTraceAuctionMessages,
+               DefaultMinSlowModeTraceAuctionMessages,
+               false},
+           TraceSettings slowModeTraceSettingsBidMessages = TraceSettings{
+               DefaultMaxSlowModeTraceBidMessages,
+               DefaultMinSlowModeTraceBidMessages,
+               false},
+           TraceSettings traceSettingsAuctionMessages = TraceSettings{
+               DefaultMaxTraceAuctionMessages,
+               DefaultMinTraceAuctionMessages,
+               false},
+           TraceSettings traceSettingsBidMessages = TraceSettings{
+               DefaultMaxTraceBidMessages,
+               DefaultMinTraceBidMessages,
+               false}
+           );
 
     ~Router();
 
@@ -826,59 +867,17 @@ public:
 
     Amount maxBidAmount;
 
-    /*************************************************************************/
-    /* TRACE METRICS (GRAPHITE)                                              */
-    /*************************************************************************/
-
-    /* Metric tracing limits per second - slow mode.
-       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
-       Avoid a large max at high QPS. */
-    uint16_t maxSlowModeTraceAuctionMetrics;            // default = 1000
-    uint16_t maxSlowModeTraceBidMetrics;                // default =  500
-    uint16_t minSlowModeTraceAuctionMetrics;            // default =  100
-    uint16_t minSlowModeTraceBidMetrics;                // default =   50
-
-    /* Metric tracing limits per second - normal mode.
-       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
-       Avoid a large max at high QPS. */
-    uint16_t maxTraceAuctionMetrics;                    // default =  500
-    uint16_t maxTraceBidMetrics;                        // default =  250
-    uint16_t minTraceAuctionMetrics;                    // default =   50
-    uint16_t minTraceBidMetrics;                        // default =   25
-
-    /* Force metric tracing (within max limits) - normal + slow mode.
-       TODO: Consider adding separate slow mode controls.
-       TODO: Convert to a probability control for randomization,
-             replace: auction->id.hash() % 10 == 0 */
-    bool traceAllAuctionMetrics;
-    bool traceAllBidMetrics;
-
-    /*************************************************************************/
-    /* TRACE MESSAGES                                                        */
-    /*************************************************************************/
-
-    /* Message tracing limits per second - slow mode.
-       Perhaps higher than normal mode to assist in diagnosing slow mode condition.
-       Avoid a large max at high QPS. */
-    uint16_t maxSlowModeTraceAuctionMessages;           // default =    0
-    uint16_t maxSlowModeTraceBidMessages;               // default =    0
-    uint16_t minSlowModeTraceAuctionMessages;           // default =    0
-    uint16_t minSlowModeTraceBidMessages;               // default =    0
-
-    /* Message tracing limits per second - normal mode.
-       Perhaps lower than slow mode for maximum performance and scalability under usual conditions.
-       Avoid a large max at high QPS. */
-    uint16_t maxTraceAuctionMessages;                   // default =    0
-    uint16_t maxTraceBidMessages;                       // default =    0
-    uint16_t minTraceAuctionMessages;                   // default =    0
-    uint16_t minTraceBidMessages;                       // default =    0
-
-    /* Force message tracing (within max limits) - normal + slow mode.
-       TODO: Consider adding separate slow mode controls.
-       TODO: Convert to a probability control for randomization,
-             replace: auction->id.hash() % 10 == 0 */
-    bool traceAllAuctionMessages;
-    bool traceAllBidMessages;
+    TraceSettings
+        // Trace Metrics (Graphite):
+        slowModeTraceSettingsAuctionMetrics,
+        slowModeTraceSettingsBidMetrics,
+        traceSettingsAuctionMetrics,
+        traceSettingsBidMetrics,
+        // Trace Messages;
+        slowModeTraceSettingsAuctionMessages,
+        slowModeTraceSettingsBidMessages,
+        traceSettingsAuctionMessages,
+        traceSettingsBidMessages;
 };
 
 
