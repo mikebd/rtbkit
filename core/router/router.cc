@@ -128,6 +128,24 @@ dumpSpot(Id spot) const
 /* TRACE SETTINGS                                                            */
 /*****************************************************************************/
 
+bool
+TraceSettings::isValid(ostringstream & messageStream) const
+{
+    bool valid = true;
+
+    if (mod == 0) {
+        valid = false;
+        messageStream << "Invalid modulus == 0 (division by zero)" << endl;
+    }
+
+    if (min > max) {
+        valid = false;
+        messageStream << "Invalid min (" << min << ") > max (" << max << ")" << endl;
+    }
+
+    return valid;
+}
+
 ostream &
 operator<<(ostream & os, const TraceSettings & ts)
 {
@@ -276,31 +294,48 @@ Router(std::shared_ptr<ServiceProxies> services,
 }
 
 bool
+checkConfigImpl(const Router::TraceConfig traceConfig, const char * context, const TraceSettings & ts)
+{
+    if (traceConfig == Router::TraceConfig::All)
+        cerr << "    " << context << ": " << ts;
+
+    ostringstream oss;
+    bool valid = ts.isValid(oss);
+
+    if (! valid && traceConfig != Router::TraceConfig::None) {
+        if (traceConfig == Router::TraceConfig::Error)
+            cerr << "    " << context << ": " << ts;
+
+        cerr << "Error(s):" << endl << oss.str();
+    }
+
+    return valid;
+}
+
+bool
 Router::
 checkConfig(const TraceConfig traceConfig /* = TraceConfig::None */) const
 {
-    bool validConfig = true;
+    bool valid = true;
 
-    // TODO: Add configuration validation
+    // TODO: Complete the validation and configuration trace output
 
-    // TODO: Complete the configuration trace output
-
-    if (traceConfig == TraceConfig::All) {
+    if (traceConfig == TraceConfig::All)
         cerr << "Router Configuration:" << endl;
-        cerr << "    Slow Mode Trace Auction Metrics : " << slowModeTraceSettingsAuctionMetrics;
-        cerr << "    Slow Mode Trace Bid Metrics     : " << slowModeTraceSettingsBidMetrics;
-        cerr << "              Trace Auction Metrics : " << traceSettingsAuctionMetrics;
-        cerr << "              Trace Bid Metrics     : " << traceSettingsBidMetrics;
-        cerr << "    Slow Mode Trace Auction Messages: " << slowModeTraceSettingsAuctionMessages;
-        cerr << "    Slow Mode Trace Bid Messages    : " << slowModeTraceSettingsBidMessages;
-        cerr << "              Trace Auction Messages: " << traceSettingsAuctionMessages;
-        cerr << "              Trace Bid Messages    : " << traceSettingsBidMessages;
-    }
 
-    if (! validConfig)
-        cerr << "ERROR: Invalid Configuration" << endl;
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Auction Metrics ", slowModeTraceSettingsAuctionMetrics);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Bid Metrics     ", slowModeTraceSettingsBidMetrics);
+    valid &= checkConfigImpl(traceConfig, "          Trace Auction Metrics ", traceSettingsAuctionMetrics);
+    valid &= checkConfigImpl(traceConfig, "          Trace Bid Metrics     ", traceSettingsBidMetrics);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Auction Messages", slowModeTraceSettingsAuctionMessages);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Bid Messages    ", slowModeTraceSettingsBidMessages);
+    valid &= checkConfigImpl(traceConfig, "          Trace Auction Messages", traceSettingsAuctionMessages);
+    valid &= checkConfigImpl(traceConfig, "          Trace Bid Messages    ", traceSettingsBidMessages);
 
-    return validConfig;
+    if (! valid)
+        cerr << "Error: Invalid Configuration" << endl;
+
+    return valid;
 }
 
 void

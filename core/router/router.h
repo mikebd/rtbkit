@@ -97,13 +97,15 @@ struct AuctionDebugInfo {
 /*****************************************************************************/
 
 struct TraceSettings {
+    bool isValid(std::ostringstream & messageStream) const;
+
     uint16_t max;       // maximum count per second
     uint16_t min;       // minimum count per second
     uint16_t mod;       // modulus test for (min, max] - hit if: Id.hash() % mod == 0
     bool all;           // all = override mod test (remains constrained by max)
 };
 
-ostream & operator<<(ostream & os, const TraceSettings & ts);
+ostream & operator<<(std::ostream & os, const TraceSettings & ts);
 
 /*****************************************************************************/
 /* ROUTER                                                                    */
