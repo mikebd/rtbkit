@@ -71,6 +71,8 @@ struct AccountKey : public AccountKeyBase {
             validateSlug(slug);
     }
 
+    // TODO: Consider caching these renderings by delimiter and returning a
+    //       (possibly weak) reference if this comes up high in profiling.
     std::string toString(char delimiter = ':') const
     {
         std::string result;
