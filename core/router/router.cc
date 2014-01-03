@@ -152,9 +152,9 @@ ostream &
 operator<<(ostream & os, const TraceSettings & ts)
 {
     os
-        << "min=" << ts.min
-        << ", max=" << ts.max
-        << ", mod=" << ts.mod << ((ts.mod == 1) ? " (all)" : "")
+        << "min=" << setw(5) << ts.min
+        << ", max=" << setw(5) << ts.max
+        << ", mod=" << setw(5) << ts.mod << ((ts.mod == 1) ? " (all)" : "")
         << endl;
 
     return os;
@@ -299,15 +299,17 @@ Router(std::shared_ptr<ServiceProxies> services,
 bool
 checkConfigImpl(const Router::TraceConfig traceConfig, const char * context, const TraceSettings & ts)
 {
+    const char * padding = "                   ";
+
     if (traceConfig == Router::TraceConfig::All)
-        cerr << "    " << context << ": " << ts;
+        cerr << padding << context << ": " << ts;
 
     ostringstream oss;
     bool valid = ts.isValid(oss);
 
     if (! valid && traceConfig != Router::TraceConfig::None) {
         if (traceConfig == Router::TraceConfig::Error)
-            cerr << "    " << context << ": " << ts;
+            cerr << padding<< context << ": " << ts;
 
         cerr << "Error(s):" << endl << oss.str();
     }
@@ -331,16 +333,17 @@ checkConfig(const TraceConfig traceConfig /* = TraceConfig::None */) const
         cerr << "    Log Bids     : " << boolalpha << logBids << noboolalpha << endl;
         cerr << "    Loss Assumed : " << secondsUntilLossAssumed() << " seconds" << endl;
         cerr << "    Max Bid Price: " << maxBidAmount << endl;
+        cerr << "    Per second tracing policies:" << endl;
     }
 
-    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Auction Metrics ", slowModeTraceSettingsAuctionMetrics);
-    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Bid Metrics     ", slowModeTraceSettingsBidMetrics);
-    valid &= checkConfigImpl(traceConfig, "          Trace Auction Metrics ", traceSettingsAuctionMetrics);
-    valid &= checkConfigImpl(traceConfig, "          Trace Bid Metrics     ", traceSettingsBidMetrics);
-    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Auction Messages", slowModeTraceSettingsAuctionMessages);
-    valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Bid Messages    ", slowModeTraceSettingsBidMessages);
-    valid &= checkConfigImpl(traceConfig, "          Trace Auction Messages", traceSettingsAuctionMessages);
-    valid &= checkConfigImpl(traceConfig, "          Trace Bid Messages    ", traceSettingsBidMessages);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Auction Metrics ", slowModeTraceSettingsAuctionMetrics);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Bid Metrics     ", slowModeTraceSettingsBidMetrics);
+    valid &= checkConfigImpl(traceConfig, "          Auction Metrics ", traceSettingsAuctionMetrics);
+    valid &= checkConfigImpl(traceConfig, "          Bid Metrics     ", traceSettingsBidMetrics);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Auction Messages", slowModeTraceSettingsAuctionMessages);
+    valid &= checkConfigImpl(traceConfig, "Slow Mode Bid Messages    ", slowModeTraceSettingsBidMessages);
+    valid &= checkConfigImpl(traceConfig, "          Auction Messages", traceSettingsAuctionMessages);
+    valid &= checkConfigImpl(traceConfig, "          Bid Messages    ", traceSettingsBidMessages);
 
     cerr << endl
         << Date::now().printIso8601(0) << " "
