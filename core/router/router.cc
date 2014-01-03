@@ -335,8 +335,7 @@ checkConfig(const TraceConfig traceConfig /* = TraceConfig::None */) const
     valid &= checkConfigImpl(traceConfig, "          Trace Auction Messages", traceSettingsAuctionMessages);
     valid &= checkConfigImpl(traceConfig, "          Trace Bid Messages    ", traceSettingsBidMessages);
 
-    if (! valid)
-        cerr << "Error: Invalid Configuration" << endl;
+    cerr << endl << (valid ? "Configuration validated" : "Error: Invalid Configuration") << endl << endl;
 
     return valid;
 }

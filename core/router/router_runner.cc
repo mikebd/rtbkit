@@ -215,10 +215,14 @@ init()
 
     bool initialized = false;
 
-    if (checkConfig) {
-        // Trace and validate configuration without initializing and starting the service
-        (void) router->checkConfig(Router::TraceConfig::All);
-    } else if(router->checkConfig(Router::TraceConfig::Error)) {
+    // Trace and validate configuration
+    const bool validConfig = router->checkConfig(Router::TraceConfig::All);
+
+    if (! checkConfig   // Otherwise, trace and validate configuration without
+                        // initialization and startup.
+
+        && validConfig) // Abort if the configuration is invalid
+    {
         router->init();
 
         banker = std::make_shared<SlaveBanker>(proxies->zmqContext,
