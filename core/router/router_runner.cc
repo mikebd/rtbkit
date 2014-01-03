@@ -90,7 +90,7 @@ doOptions(int argc, char ** argv,
 {
     using namespace boost::program_options;
 
-    options_description router_options("Router options");
+    options_description router_options("Router options", 100);
     router_options.add_options()
         ("check-config", value<bool>(&checkConfig)->zero_tokens(),
          "trace and validate configuration, exit without initializing or starting")
@@ -110,61 +110,61 @@ doOptions(int argc, char ** argv,
          "maximum bid price accepted by router")
         // Trace Metrics (Graphite):
             // Slow - Auction:
-            ("min-slow-trace-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.min),
+            ("min-slow-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.min),
              "minimum auction metrics to trace per second in slow mode")
-            ("max-slow-trace-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.max),
+            ("max-slow-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.max),
              "maximum auction metrics to trace per second in slow mode")
-            ("mod-slow-trace-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.mod),
+            ("mod-slow-auction-metrics", value<uint16_t>(&slowModeTraceSettingsAuctionMetrics.mod),
              "modulus: Id.hash() % <mod-...> == 0")
             // Slow - Bid:
-            ("min-slow-trace-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.min),
-             "minimum bids metrics to trace per second in slow mode")
-            ("max-slow-trace-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.max),
+            ("min-slow-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.min),
+             "minimum bid metrics to trace per second in slow mode")
+            ("max-slow-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.max),
              "maximum bid metrics to trace per second in slow mode")
-            ("mod-slow-trace-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.mod),
+            ("mod-slow-bid-metrics", value<uint16_t>(&slowModeTraceSettingsBidMetrics.mod),
              "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Auction:
-            ("min-trace-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.min),
+            ("min-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.min),
              "minimum auction metrics to trace per second")
-            ("max-trace-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.max),
+            ("max-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.max),
              "maximum auction metrics to trace per second")
-            ("mod-trace-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.mod),
+            ("mod-auction-metrics", value<uint16_t>(&traceSettingsAuctionMetrics.mod),
              "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Bid:
-            ("min-trace-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.min),
-             "minimum bids metrics to trace per second")
-            ("max-trace-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.max),
+            ("min-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.min),
+             "minimum bid metrics to trace per second")
+            ("max-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.max),
              "maximum bid metrics to trace per second")
-            ("mod-trace-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.mod),
+            ("mod-bid-metrics", value<uint16_t>(&traceSettingsBidMetrics.mod),
              "modulus: Id.hash() % <mod-...> == 0")
         // Trace Messages:
             // Slow - Auction:
-            ("min-slow-trace-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.min),
+            ("min-slow-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.min),
              "minimum auction messages to trace per second in slow mode")
-            ("max-slow-trace-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.max),
+            ("max-slow-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.max),
              "maximum auction messages to trace per second in slow mode")
-            ("mod-slow-trace-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.mod),
+            ("mod-slow-auction-messages", value<uint16_t>(&slowModeTraceSettingsAuctionMessages.mod),
              "modulus: Id.hash() % <mod-...> == 0")
             // Slow - Bid:
-            ("min-slow-trace-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.min),
-             "minimum bids messages to trace per second in slow mode")
-            ("max-slow-trace-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.max),
+            ("min-slow-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.min),
+             "minimum bid messages to trace per second in slow mode")
+            ("max-slow-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.max),
              "maximum bid messages to trace per second in slow mode")
-            ("mod-slow-trace-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.mod),
+            ("mod-slow-bid-messages", value<uint16_t>(&slowModeTraceSettingsBidMessages.mod),
              "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Auction:
-            ("min-trace-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.min),
+            ("min-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.min),
              "minimum auction messages to trace per second")
-            ("max-trace-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.max),
+            ("max-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.max),
              "maximum auction messages to trace per second")
-            ("mod-trace-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.mod),
+            ("mod-auction-messages", value<uint16_t>(&traceSettingsAuctionMessages.mod),
              "modulus: Id.hash() % <mod-...> == 0")
             // Normal - Bid:
-            ("min-trace-bid-messages", value<uint16_t>(&traceSettingsBidMessages.min),
-             "minimum bids messages to trace per second")
-            ("max-trace-bid-messages", value<uint16_t>(&traceSettingsBidMessages.max),
+            ("min-bid-messages", value<uint16_t>(&traceSettingsBidMessages.min),
+             "minimum bid messages to trace per second")
+            ("max-bid-messages", value<uint16_t>(&traceSettingsBidMessages.max),
              "maximum bid messages to trace per second")
-            ("mod-trace-bid-messages", value<uint16_t>(&traceSettingsBidMessages.mod),
+            ("mod-bid-messages", value<uint16_t>(&traceSettingsBidMessages.mod),
              "modulus: Id.hash() % <mod-...> == 0");
 
     options_description all_opt = opts;
