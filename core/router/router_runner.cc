@@ -41,6 +41,7 @@ RouterRunner::
 RouterRunner() :
     exchangeConfigurationFile("examples/router-config.json"),
     checkConfig(false),
+    debug(false),
     lossSeconds(15.0),
     logAuctions(false),
     logBids(false),
@@ -93,6 +94,8 @@ doOptions(int argc, char ** argv,
     router_options.add_options()
         ("check-config", value<bool>(&checkConfig)->zero_tokens(),
          "trace and validate configuration, exit without initializing or starting")
+        ("debug", value<bool>(&debug)->zero_tokens(),
+         "enable debug mechanisms, not recommended at high QPS")
         ("loss-seconds,l", value<float>(&lossSeconds),
          "number of seconds after which a loss is assumed")
         ("log-uri", value<vector<string> >(&logUris),
@@ -195,7 +198,9 @@ init()
     exchangeConfig = loadJsonFromFile(exchangeConfigurationFile);
 
     router = std::make_shared<Router>(proxies, serviceName, lossSeconds,
-                                      true, logAuctions, logBids,
+                                      true,     // connectPostAuctionLoop
+                                      debug,
+                                      logAuctions, logBids,
                                       USD_CPM(maxBidPrice),
                                       // Trace Metrics (Graphite):
                                       slowModeTraceSettingsAuctionMetrics,

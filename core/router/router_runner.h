@@ -49,6 +49,8 @@ struct RouterRunner {
 
     bool checkConfig;
 
+    bool debug;
+
     float lossSeconds;
 
     bool logAuctions;
