@@ -70,18 +70,28 @@ struct AllAgentInfo : public std::vector<AgentInfoEntry> {
 };
 
 /*****************************************************************************/
+/* AUCTION PROCESSING STAGE                                                  */
+/*****************************************************************************/
+
+enum class ProcessingStage {
+    Auction,
+    Bid
+};
+
+/*****************************************************************************/
 /* DEBUG INFO                                                                */
 /*****************************************************************************/
 
 struct AuctionDebugInfo {
-    void addAuctionEvent(Date date, std::string type,
+    void addAuctionEvent(ProcessingStage stage, Date date, std::string type,
                          const std::vector<std::string> & args);
-    void addSpotEvent(const Id & spot, Date date, std::string type,
+    void addSpotEvent(ProcessingStage stage, const Id & spot, Date date, std::string type,
                       const std::vector<std::string> & args);
     void dumpAuction() const;
     void dumpSpot(Id spot) const;
 
     struct Message {
+        ProcessingStage stage;
         Date timestamp;
         Id spot;
         std::string type;
@@ -818,40 +828,50 @@ public:
     /*************************************************************************/
 
     /** The first call for an auction should use this to capture the auction reference */
-    void initialDebugAuction(const std::shared_ptr<Auction> & auction, const std::string & type,
+    void initialDebugAuction(const std::shared_ptr<Auction> & auction,
+                             ProcessingStage stage,
+                             const std::string & type,
                              const std::vector<std::string> & args
                              = std::vector<std::string>())
     {
         if (JML_LIKELY(!doDebug)) return;
-        debugAuctionImpl(auction, type, args);
+        debugAuctionImpl(auction, stage, type, args);
     }
 
-    void debugAuctionImpl(const std::shared_ptr<Auction> & auction, const std::string & type,
+    void debugAuctionImpl(const std::shared_ptr<Auction> & auction,
+                          ProcessingStage stage,
+                          const std::string & type,
                           const std::vector<std::string> & args);
 
     /** Subsequent calls for an auction should use this */
-    void debugAuction(const Id & auction, const std::string & type,
+    void debugAuction(const Id & auction,
+                      ProcessingStage stage,
+                      const std::string & type,
                       const std::vector<std::string> & args
                       = std::vector<std::string>())
     {
         if (JML_LIKELY(!doDebug)) return;
-        debugAuctionImpl(auction, type, args);
+        debugAuctionImpl(auction, stage, type, args);
     }
 
-    void debugAuctionImpl(const Id & auction, const std::string & type,
+    void debugAuctionImpl(const Id & auction,
+                          ProcessingStage stage,
+                          const std::string & type,
                           const std::vector<std::string> & args);
 
     void debugSpot(const Id & auction,
+                   ProcessingStage stage,
                    const Id & spot,
                    const std::string & type,
                    const std::vector<std::string> & args
                        = std::vector<std::string>())
     {
         if (JML_LIKELY(!doDebug)) return;
-        debugSpotImpl(auction, spot, type, args);
+        debugSpotImpl(auction, stage, spot, type, args);
     }
 
     void debugSpotImpl(const Id & auction,
+                       ProcessingStage stage,
                        const Id & spot,
                        const std::string & type,
                        const std::vector<std::string> & args);

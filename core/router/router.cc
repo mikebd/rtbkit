@@ -83,10 +83,11 @@ toJson() const
 
 void
 AuctionDebugInfo::
-addAuctionEvent(Date timestamp, std::string type,
+addAuctionEvent(ProcessingStage stage, Date timestamp, std::string type,
                 const std::vector<std::string> & args)
 {
     Message message;
+    message.stage = stage;
     message.timestamp = timestamp;
     message.type = type;
     //message.args = args;
@@ -95,10 +96,11 @@ addAuctionEvent(Date timestamp, std::string type,
 
 void
 AuctionDebugInfo::
-addSpotEvent(const Id & spot, Date timestamp, std::string type,
+addSpotEvent(ProcessingStage stage, const Id & spot, Date timestamp, std::string type,
              const std::vector<std::string> & args)
 {
     Message message;
+    message.stage = stage;
     message.spot = spot;
     message.timestamp = timestamp;
     message.type = type;
@@ -1187,7 +1189,7 @@ checkExpiredAuctions()
         auto onExpiredInFlight = [&] (const Id & auctionId,
                                       const AuctionInfo & auctionInfo)
             {
-                this->debugAuction(auctionId, "EXPIRED", {});
+                this->debugAuction(auctionId, ProcessingStage::Auction, "EXPIRED", {});
 
                 // Tell any remaining bidders that it's too late...
                 for (auto it = auctionInfo.bidders.begin(),
@@ -1805,7 +1807,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             }
         }
 
-        initialDebugAuction(auction, "AUCTION");
+        initialDebugAuction(auction, ProcessingStage::Auction, "AUCTION");
     } catch (const std::exception & exc) {
         cerr << "warning: auction threw exception: " << exc.what() << endl;
         if (augInfo)
@@ -1916,7 +1918,7 @@ doBid(const std::vector<std::string> & message)
 
     doProfileEvent(1, "params");
 
-    debugAuction(auctionId, "BID", message);
+    debugAuction(auctionId, ProcessingStage::Bid, "BID", message);
 
     if (!agents.count(agent)) {
         returnErrorResponse(message, "unknown agent");
@@ -2121,13 +2123,13 @@ doBid(const std::vector<std::string> & message)
             continue;
         }
 
-	recordCount(bid.price.value, "cummulatedBidPrice");
-	recordCount(price.value, "cummulatedAuthorizedPrice");
+        recordCount(bid.price.value, "cummulatedBidPrice");
+        recordCount(price.value, "cummulatedAuthorizedPrice");
 
         doProfileEvent(6, "banker");
 
         if (doDebug)
-            this->debugSpot(auctionId, imp[spotIndex].id,
+            this->debugSpot(auctionId, ProcessingStage::Bid, imp[spotIndex].id,
                     ML::format("BID %s %s %f",
                             auctionKey.c_str(),
                             bid.price.toString().c_str(),
@@ -2164,7 +2166,7 @@ doBid(const std::vector<std::string> & message)
         string msg = Auction::Response::print(localResult);
 
         if (doDebug)
-            this->debugSpot(auctionId, imp[spotIndex].id,
+            this->debugSpot(auctionId, ProcessingStage::Bid, imp[spotIndex].id,
                     ML::format("BID %s %s",
                             auctionKey.c_str(), msg.c_str()));
 
@@ -2251,9 +2253,9 @@ doBid(const std::vector<std::string> & message)
     doProfileEvent(9, "postTiming");
 
     if (auctionInfo.bidders.empty()) {
-        debugAuction(auctionId, "FINISH", message);
+        debugAuction(auctionId, ProcessingStage::Bid, "FINISH", message);
         if (!auctionInfo.auction->finish()) {
-            debugAuction(auctionId, "FINISH TOO LATE", message);
+            debugAuction(auctionId, ProcessingStage::Bid, "FINISH TOO LATE", message);
         }
         inFlight.erase(auctionId);
         //cerr << "couldn't finish auction " << auctionInfo.auction->id
@@ -2310,7 +2312,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
         = auction->getResponses();
 
     if (doDebug)
-        debugAuction(auctionId, ML::format("SUBMITTED %d slots",
+        debugAuction(auctionId, ProcessingStage::Bid, ML::format("SUBMITTED %d slots",
                                            (int)allResponses.size()),
                      {});
 
@@ -2327,7 +2329,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
             = allResponses[spotNum];
 
         if (doDebug)
-            debugSpot(auctionId, spotId,
+            debugSpot(auctionId, ProcessingStage::Bid, spotId,
                       ML::format("has %zd bids", responses.size()));
 
         // For all but the winning bid we tell them what's going on
@@ -2401,7 +2403,7 @@ doSubmitted(std::shared_ptr<Auction> auction)
             };
 
             if (doDebug)
-                debugSpot(auctionId, spotId,
+                debugSpot(auctionId, ProcessingStage::Bid, spotId,
                           ML::format("%s %s",
                                      msg.c_str(),
                                      auctionKey.c_str()));
@@ -2542,7 +2544,7 @@ onAuctionDone(std::shared_ptr<Auction> auction)
     backtrace();
 #endif
 
-    debugAuction(auction->id, "SENT SUBMITTED");
+    debugAuction(auction->id, ProcessingStage::Auction, "SENT SUBMITTED");
     submittedBuffer.push(auction);
 }
 
@@ -2936,7 +2938,9 @@ throwException(const std::string & key, const std::string & fmt, ...)
 
 void
 Router::
-debugAuctionImpl(const shared_ptr<Auction> & auction, const std::string & type,
+debugAuctionImpl(const shared_ptr<Auction> & auction,
+                 const ProcessingStage stage,
+                 const std::string & type,
                  const std::vector<std::string> & args)
 {
     const Id & auctionId = auction->id;
@@ -2947,17 +2951,19 @@ debugAuctionImpl(const shared_ptr<Auction> & auction, const std::string & type,
         = debugInfo.access(auctionId, now.plusSeconds(30.0));
 
     entry.auction = auction;
-    entry.addAuctionEvent(now, type, args);
+    entry.addAuctionEvent(stage, now, type, args);
 
-    // TODO: Distinguish between auction and bid messages
     // TODO: Add args to the verbose trace output
-    if (auction->traceAuctionMessages)
-        cerr << "auction=" << auctionId << ", message=" << type << endl;
+    if ((stage == ProcessingStage::Auction) ?
+            auction->traceAuctionMessages : auction->traceBidMessages)
+                cerr << "auction=" << auctionId << ", message=" << type << endl;
 }
 
 void
 Router::
-debugAuctionImpl(const Id & auctionId, const std::string & type,
+debugAuctionImpl(const Id & auctionId,
+                 const ProcessingStage stage,
+                 const std::string & type,
                  const std::vector<std::string> & args)
 {
     Date now = Date::now();
@@ -2965,18 +2971,22 @@ debugAuctionImpl(const Id & auctionId, const std::string & type,
     AuctionDebugInfo & entry
         = debugInfo.access(auctionId, now.plusSeconds(30.0));
 
-    entry.addAuctionEvent(now, type, args);
+    entry.addAuctionEvent(stage, now, type, args);
 
-    // TODO: Distinguish between auction and bid messages
     // TODO: Add args to the verbose trace output
     const auto & auction = entry.auction.lock();
-    if (auction && auction->traceAuctionMessages)
-        cerr << "auction=" << auction->id << ", message=" << type << endl;
+    if (auction &&
+        ((stage == ProcessingStage::Auction) ?
+            auction->traceAuctionMessages : auction->traceBidMessages))
+                cerr << "auction=" << auction->id << ", message=" << type << endl;
 }
 
 void
 Router::
-debugSpotImpl(const Id & auctionId, const Id & spotId, const std::string & type,
+debugSpotImpl(const Id & auctionId,
+              const ProcessingStage stage,
+              const Id & spotId,
+              const std::string & type,
               const std::vector<std::string> & args)
 {
     Date now = Date::now();
@@ -2984,13 +2994,14 @@ debugSpotImpl(const Id & auctionId, const Id & spotId, const std::string & type,
     AuctionDebugInfo & entry
         = debugInfo.access(auctionId, now.plusSeconds(30.0));
 
-    entry.addSpotEvent(spotId, now, type, args);
+    entry.addSpotEvent(stage, spotId, now, type, args);
 
-    // TODO: Distinguish between auction and bid messages
     // TODO: Add args to the verbose trace output
     const auto & auction = entry.auction.lock();
-    if (auction && auction->traceAuctionMessages)
-        cerr << "auction=" << auction->id << ", spot=" << spotId << ", message=" << type << endl;
+    if (auction &&
+        ((stage == ProcessingStage::Auction) ?
+            auction->traceAuctionMessages : auction->traceBidMessages))
+                cerr << "auction=" << auction->id << ", spot=" << spotId << ", message=" << type << endl;
 }
 
 void
