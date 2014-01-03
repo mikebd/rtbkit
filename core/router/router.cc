@@ -1373,6 +1373,24 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 {
     ML::atomic_inc(numAuctions);
 
+    const auto & auctionId = auction->id;
+
+    const bool traceAuctionMetrics =
+        auction->traceAuctionMetrics =
+        enableTrace(
+            auction->slowMode ? slowModeAuctionCountThisSecond : auctionCountThisSecond,
+            auction->slowMode ? slowModeTraceSettingsAuctionMetrics : traceSettingsAuctionMetrics,
+            auctionId);
+
+    const bool traceAuctionMessages =
+        auction->traceAuctionMessages =
+        enableTrace(
+            auction->slowMode ? slowModeAuctionCountThisSecond : auctionCountThisSecond,
+            auction->slowMode ? slowModeTraceSettingsAuctionMessages : traceSettingsAuctionMessages,
+            auctionId);
+
+    const bool traceAuction = traceAuctionMetrics || traceAuctionMessages;
+
     Date now = Date::now();
     auction->inPrepro = now;
 
@@ -1381,17 +1399,20 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
             = Date::now().plusSeconds(secondsUntilLossAssumed_);
     Date lossTimeout = auction->lossAssumed;
 
-    //cerr << "AUCTION " << auction->id << " " << auction->requestStr << endl;
+    const string & exchange = auction->request->exchange;
 
-    //cerr << "url = " << auction->request->url << endl;
+    if (traceAuctionMessages) {
+        cerr << "auction=" << auctionId << ", exchange=" << exchange << ", request=" << auction->requestStr << endl;
+        cerr << "auction=" << auctionId << ", url=" << auction->request->url << endl;
+    }
 
     if (auction->tooLate()) {
         recordHit("tooLateBeforeRouting");
+        if (traceAuctionMessages)
+            cerr << "auction=" << auctionId << ", preprocess=tooLateBeforeRouting" << endl;
         //inFlight.erase(auctionId);
         return std::shared_ptr<AugmentationInfo>();
     }
-
-    const string & exchange = auction->request->exchange;
 
     /* Parse out the adimp. */
     const vector<AdSpot> & imp = auction->request->imp;
@@ -1404,47 +1425,54 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
     double timeLeftMs = auction->timeAvailable() * 1000.0;
 
-    const bool traceAuctionMetrics =
-        auction->traceAuctionMetrics =
-        enableTrace(
-            auction->slowMode ? slowModeAuctionCountThisSecond : auctionCountThisSecond,
-            auction->slowMode ? slowModeTraceSettingsAuctionMetrics : traceSettingsAuctionMetrics,
-            auction->id);
-
     AgentConfig::RequestFilterCache cache(*auction->request);
 
     auto exchangeConnector = auction->exchangeConnector;
 
-    auto doFilterStat = [&] (const AgentConfig& config, const char * reason) {
-        if (!traceAuctionMetrics) return;
+    auto doFilterStat = [&] (const std::string & agentName, const AgentConfig& config, const char * reason) {
+        if (!traceAuction) return;
 
-        this->recordHit("accounts.%s.filter.%s",
-                config.account.toString('.'),
+        const std::string accountStr = config.account.toString('.');
+
+        if (traceAuctionMetrics)
+            this->recordHit("accounts.%s.filter.%s",
+                accountStr,
                 reason);
+
+        if (traceAuctionMessages)
+            cerr << "auction=" << auctionId
+                 << ", preprocess=filter"
+                 << ", bidder=" << agentName
+                 << ", account=" << accountStr
+                 << ", externalAccount=" << config.externalId
+                 << ", reason=" << reason
+                 << endl;
     };
 
-    if (traceAuctionMetrics) {
+    if (traceAuction) {
         forEachAgent([&] (const AgentInfoEntry& info) {
-                    ML::atomic_inc(info.stats->intoFilters);
-                    doFilterStat(*info.config, "intoStaticFilters");
-                });
+            if (traceAuctionMetrics)
+                ML::atomic_inc(info.stats->intoFilters);
+            doFilterStat(info.name, *info.config, "intoStaticFilters");
+        });
     }
 
     // Do the actual filtering.
     auto biddableConfigs = filters.filter(*auction->request, exchangeConnector);
 
     auto checkAgent = [&] (
+            const std::string & agentName,
             const AgentConfig & config,
             const AgentStatus & status,
             AgentStats & stats)
         {
             if (status.dead || status.lastHeartbeat.secondsSince(now) > 2.0) {
-                doFilterStat(config, "static.agentAppearsDead");
+                doFilterStat(agentName, config, "static.agentAppearsDead");
                 return false;
             }
 
             if (status.numBidsInFlight >= config.maxInFlight) {
-                doFilterStat(config, "static.earlyTooManyInFlight");
+                doFilterStat(agentName, config, "static.earlyTooManyInFlight");
                 return false;
             }
 
@@ -1453,7 +1481,7 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
                 && timeLeftMs < config.minTimeAvailableMs)
             {
                 ML::atomic_inc(stats.notEnoughTime);
-                doFilterStat(config, "static.notEnoughTime");
+                doFilterStat(agentName, config, "static.notEnoughTime");
                 return false;
             }
 
@@ -1461,11 +1489,16 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
         };
 
     for (const auto& entry : biddableConfigs) {
-        if (entry.biddableSpots.empty()) continue;
-        if (!checkAgent(*entry.config, *entry.status, *entry.stats)) continue;
+        if (entry.biddableSpots.empty()) {
+            doFilterStat(entry.name, *entry.config, "noBiddableSpots");
+            continue;
+        }
+        if (!checkAgent(entry.name, *entry.config, *entry.status, *entry.stats)) {
+            continue;
+        }
 
         ML::atomic_inc(entry.stats->passedStaticFilters);
-        doFilterStat(*entry.config, "passedStaticFilters");
+        doFilterStat(entry.name, *entry.config, "passedStaticFilters");
 
         string rrGroup = entry.config->roundRobinGroup;
         if (rrGroup == "") rrGroup = entry.name;
@@ -1480,49 +1513,84 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
         groupAgents[rrGroup].totalBidProbability += entry.config->bidProbability;
     }
 
-
     std::vector<GroupPotentialBidders> validGroups;
 
-    for (auto it = groupAgents.begin(), end = groupAgents.end();
-         it != end;  ++it) {
+    for (const auto & entry : groupAgents) {
+        const auto & groupName = entry.first;
+        const auto & potentialBidderGroup = entry.second;
+
         // Check for bid probability and skip if we don't bid
-        double bidProbability
-            = it->second.totalBidProbability
-            / it->second.size()
+        const double bidProbability
+            = potentialBidderGroup.totalBidProbability
+            / potentialBidderGroup.size()
             * globalBidProbability;
 
+        function<void (const char * reason)> traceBidProbabilityMessage;
+        if (traceAuctionMessages)
+            traceBidProbabilityMessage = [&] (const char * reason) {
+                for (const auto & potentialBidder : potentialBidderGroup)
+                    cerr << "auction=" << auctionId
+                         << ", preprocess=bidProbability" << reason
+                         << ", globalBidProbability=" << globalBidProbability
+                         << ", bidProbability=" << bidProbability
+                         << ", bidderGroup=" << groupName
+                         << ", bidderGroupTotalProbability=" << potentialBidderGroup.totalBidProbability
+                         << ", bidderGroupBidderCount=" << potentialBidderGroup.size()
+                         << ", bidder=" << potentialBidder.agent
+                         << endl;
+            };
+
         if (bidProbability < 1.0) {
-            float val = (random() % 1000000) / 1000000.0;
+            const float val = (random() % 1000000) / 1000000.0;
             if (val > bidProbability) {
-                for (unsigned i = 0;  i < it->second.size();  ++i)
-                    ML::atomic_inc(it->second[i].stats->skippedBidProbability);
+                for (auto & potentialBidder : potentialBidderGroup)
+                    ML::atomic_inc(potentialBidder.stats->skippedBidProbability);
+                if (traceBidProbabilityMessage)
+                    traceBidProbabilityMessage("Miss");
                 continue;
-            }
-        }
+            } else if(traceBidProbabilityMessage)
+                traceBidProbabilityMessage("Hit");
+        } else if(traceBidProbabilityMessage)
+            traceBidProbabilityMessage("Bypass");
 
         // Group is valid for bidding; next step is to augment the bid
         // request
-        validGroups.push_back(it->second);
+        validGroups.push_back(potentialBidderGroup);
     }
+
+    auction->outOfPrepro = Date::now();
+    const auto preproMillis = auction->outOfPrepro.secondsSince(auction->inPrepro) * 1000.0;
+    recordOutcome(preproMillis, "preprocessAuctionTimeMs");
 
     if (validGroups.empty()) {
         // Now we need to end the auction
         //inFlight.erase(auctionId);
         if (!auction->finish()) {
             recordHit("tooLateToFinish");
-        }
+            if (traceAuctionMessages)
+                cerr << "auction=" << auctionId
+                     << ", preprocess=noValidBidderGroups"
+                     << ", auctionFinish=tooLate"
+                     << ", preprocessMillis=" << preproMillis
+                     << endl;
+        } else if (traceAuctionMessages)
+            cerr << "auction=" << auctionId
+                 << ", preprocess=noValidBidderGroups"
+                 << ", preprocessMillis=" << preproMillis
+                 << endl;
 
-        //cerr << "no valid groups " << endl;
         return std::shared_ptr<AugmentationInfo>();
     }
 
+    if (traceAuctionMessages)
+        cerr << "auction=" << auctionId
+             << ", preprocess=passed"
+             << ", bidderGroupCount=" << validGroups.size()
+             << ", preprocessMillis=" << preproMillis
+             << endl;
+
     auto info = std::make_shared<AugmentationInfo>(auction, lossTimeout);
     info->potentialGroups.swap(validGroups);
-
-    auction->outOfPrepro = Date::now();
-
-    recordOutcome(auction->outOfPrepro.secondsSince(auction->inPrepro) * 1000.0,
-                  "preprocessAuctionTimeMs");
 
     return info;
 }
