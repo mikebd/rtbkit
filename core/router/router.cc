@@ -323,8 +323,15 @@ checkConfig(const TraceConfig traceConfig /* = TraceConfig::None */) const
 
     // TODO: Complete the validation and configuration trace output
 
-    if (traceConfig == TraceConfig::All)
+    if (traceConfig == TraceConfig::All) {
         cerr << "Router Configuration:" << endl;
+
+        cerr << "    Debug        : " << boolalpha << doDebug << noboolalpha << endl;
+        cerr << "    Log Auctions : " << boolalpha << logAuctions << noboolalpha << endl;
+        cerr << "    Log Bids     : " << boolalpha << logBids << noboolalpha << endl;
+        cerr << "    Loss Assumed : " << secondsUntilLossAssumed() << " seconds" << endl;
+        cerr << "    Max Bid Price: " << maxBidAmount << endl;
+    }
 
     valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Auction Metrics ", slowModeTraceSettingsAuctionMetrics);
     valid &= checkConfigImpl(traceConfig, "Slow Mode Trace Bid Metrics     ", slowModeTraceSettingsBidMetrics);
@@ -335,7 +342,10 @@ checkConfig(const TraceConfig traceConfig /* = TraceConfig::None */) const
     valid &= checkConfigImpl(traceConfig, "          Trace Auction Messages", traceSettingsAuctionMessages);
     valid &= checkConfigImpl(traceConfig, "          Trace Bid Messages    ", traceSettingsBidMessages);
 
-    cerr << endl << (valid ? "Configuration validated" : "Error: Invalid Configuration") << endl << endl;
+    cerr << endl
+        << Date::now().printIso8601(0) << " "
+        << (valid ? "Configuration validated" : "Error: Invalid Configuration")
+        << endl << endl;
 
     return valid;
 }
