@@ -846,42 +846,42 @@ public:
                           const std::vector<std::string> & args);
 
     /** Subsequent calls for an auction should use this */
-    void debugAuction(const Id & auction,
+    void debugAuction(const Id & auctionId,
                       ProcessingStage stage,
                       const std::string & type,
                       const std::vector<std::string> & args
                       = std::vector<std::string>())
     {
         if (JML_LIKELY(!doDebug)) return;
-        debugAuctionImpl(auction, stage, type, args);
+        debugAuctionImpl(auctionId, stage, type, args);
     }
 
-    void debugAuctionImpl(const Id & auction,
+    void debugAuctionImpl(const Id & auctionId,
                           ProcessingStage stage,
                           const std::string & type,
                           const std::vector<std::string> & args);
 
-    void debugSpot(const Id & auction,
+    void debugSpot(const Id & auctionId,
                    ProcessingStage stage,
-                   const Id & spot,
+                   const Id & spotId,
                    const std::string & type,
                    const std::vector<std::string> & args
                        = std::vector<std::string>())
     {
         if (JML_LIKELY(!doDebug)) return;
-        debugSpotImpl(auction, stage, spot, type, args);
+        debugSpotImpl(auctionId, stage, spotId, type, args);
     }
 
-    void debugSpotImpl(const Id & auction,
+    void debugSpotImpl(const Id & auctionId,
                        ProcessingStage stage,
-                       const Id & spot,
+                       const Id & spotId,
                        const std::string & type,
                        const std::vector<std::string> & args);
 
     void expireDebugInfo();
 
-    void dumpAuction(const Id & auction) const;
-    void dumpSpot(const Id & auction, const Id & spot) const;
+    void dumpAuction(const Id & auctionId) const;
+    void dumpSpot(const Id & auctionId, const Id & spotId) const;
 
     Date getCurrentTime() const { return Date::now(); }
 

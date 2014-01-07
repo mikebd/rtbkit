@@ -3192,12 +3192,12 @@ expireDebugInfo()
 
 void
 Router::
-dumpAuction(const Id & auction) const
+dumpAuction(const Id & auctionId) const
 {
     boost::unique_lock<ML::Spinlock> guard(debugLock);
-    auto it = debugInfo.find(auction);
+    auto it = debugInfo.find(auctionId);
     if (it == debugInfo.end()) {
-        //cerr << "*** unknown auction " << auction << " in "
+        //cerr << "*** unknown auction " << auctionId << " in "
         //     << debugInfo.size() << endl;
     }
     else it->second.dumpAuction();
@@ -3205,15 +3205,15 @@ dumpAuction(const Id & auction) const
 
 void
 Router::
-dumpSpot(const Id & auction, const Id & spot) const
+dumpSpot(const Id & auctionId, const Id & spotId) const
 {
     boost::unique_lock<ML::Spinlock> guard(debugLock);
-    auto it = debugInfo.find(auction);
+    auto it = debugInfo.find(auctionId);
     if (it == debugInfo.end()) {
-        //cerr << "*** unknown auction " << auction << " in "
+        //cerr << "*** unknown auction " << auctionId << " in "
         //     << debugInfo.size() << endl;
     }
-    else it->second.dumpSpot(spot);
+    else it->second.dumpSpot(spotId);
 }
 
 /** MonitorProvider interface */
