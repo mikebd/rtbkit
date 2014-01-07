@@ -2318,7 +2318,7 @@ onNewAuction(std::shared_ptr<Auction> auction)
         }
 
         if (maxSlowModeAuctions > 0 && slowModeCount > maxSlowModeAuctions) {
-            /* Allow the first 100 auctions each second (configurable: --max-slow-mode-auctions).
+            /* Allow the first 100 auctions each second (configurable: --max-slow-auctions).
                This control is disabled if it is 0. */
             recordHit("monitor.ignoredAuctions");
             auction->finish();

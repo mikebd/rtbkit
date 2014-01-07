@@ -69,7 +69,7 @@ doOptions(int argc, char ** argv,
          "log bid responses")
         ("max-bid-price", value(&maxBidPrice),
          "maximum bid price accepted by router")
-        ("max-slow-mode-auctions", value<uint16_t>(&maxSlowModeAuctions),
+        ("max-slow-auctions", value<uint16_t>(&maxSlowModeAuctions),
          "maximum auctions per second considered in slow mode");
 
     options_description all_opt = opts;
