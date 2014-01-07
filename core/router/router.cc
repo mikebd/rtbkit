@@ -1441,7 +1441,7 @@ preprocessAuction(const std::shared_ptr<Auction> & auction)
 
         if (traceAuctionMessages)
             cerr << "auction=" << auctionId
-                 << ", preprocess=filter"
+                 << ", preprocess=configFilter"
                  << ", bidder=" << agentName
                  << ", account=" << accountStr
                  << ", externalAccount=" << config.externalId
@@ -1612,7 +1612,10 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
     RouterProfiler profiler(dutyCycleCurrent.nsStartBidding);
 
     try {
-        Id auctionId = augInfo->auction->id;
+        auto auction = augInfo->auction;
+
+        const auto & auctionId = auction->id;
+
         if (inFlight.count(auctionId)) {
             throwException("doStartBidding.alreadyInFlight",
                            "auction with ID %s already in progress",
@@ -1626,14 +1629,10 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
         }
 #endif
 
-        //cerr << "doStartBidding " << auctionId << endl;
-
         auto groupAgents = augInfo->potentialGroups;
 
         AuctionInfo & auctionInfo = addAuction(augInfo->auction,
                                                augInfo->lossTimeout);
-        auto auction = augInfo->auction;
-
         Date now = Date::now();
 
         auction->inStartBidding = now;
@@ -1651,39 +1650,66 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             enableTrace(
                 auction->slowMode ? slowModeBidCountThisSecond : bidCountThisSecond,
                 auction->slowMode ? slowModeTraceSettingsBidMetrics : traceSettingsBidMetrics,
-                auction->id);
+                auctionId);
+
+        const bool traceBidMessages =
+            auction->traceBidMessages =
+            auction->traceAuctionMessages &&        // Don't trace bid messages without auction messages
+            enableTrace(
+                auction->slowMode ? slowModeBidCountThisSecond : auctionCountThisSecond,
+                auction->slowMode ? slowModeTraceSettingsBidMessages : traceSettingsBidMessages,
+                auctionId);
+
+        const bool traceBid = traceBidMetrics || traceBidMessages;
+
+        if (traceBidMessages)
+            cerr << "auction=" << auctionId << ", bidding=start" << endl;
 
         const auto& augList = augInfo->auction->augmentations;
 
         /* For each round-robin group, send the request off to exactly one
            element. */
-        for (auto it = groupAgents.begin(), end = groupAgents.end();
-             it != end;  ++it) {
-
-            GroupPotentialBidders & bidders = *it;
-
-            for (unsigned i = 0;  i < bidders.size();  ++i) {
-                PotentialBidder & bidder = bidders[i];
+        for (auto & bidders : groupAgents) {
+            for (auto & bidder : bidders) {
                 if (!agents.count(bidder.agent)) continue;
                 AgentInfo & info = agents[bidder.agent];
                 const AgentConfig & config = *bidder.config;
+                const string traceAccountStr = "";
+                if (traceBid)
+                    config.account.toString('.');
 
                 auto doFilterStat = [&] (const char * reason)
                     {
-                        if (!traceBidMetrics) return;
+                        if (traceBidMetrics)
+                            this->recordHit("accounts.%s.filter.%s",
+                                            traceAccountStr,
+                                            reason);
 
-                        this->recordHit("accounts.%s.filter.%s",
-                                        config.account.toString('.'),
-                                        reason);
+                        if (traceBidMessages)
+                            cerr << "auction=" << auctionId
+                                 << ", bidding=configFilter"
+                                 << ", bidder=" << bidder.agent
+                                 << ", account=" << traceAccountStr
+                                 << ", externalAccount=" << config.externalId
+                                 << ", reason=" << reason
+                                 << endl;
                     };
 
                 auto doFilterMetric = [&] (const char * reason, float val)
                     {
-                        if (!traceBidMetrics) return;
+                        if (traceBidMetrics)
+                            this->recordOutcome(val, "accounts.%s.filter.%s",
+                                                traceAccountStr,
+                                                reason);
 
-                        this->recordOutcome(val, "accounts.%s.filter.%s",
-                                            config.account.toString('.'),
-                                            reason);
+                        if (traceBidMessages)
+                            cerr << "auction=" << auctionId
+                                 << ", bidding=configFilterMetric"
+                                 << ", bidder=" << bidder.agent
+                                 << ", account=" << traceAccountStr
+                                 << ", externalAccount=" << config.externalId
+                                 << ", reason=" << reason
+                                 << endl;
                     };
 
 
@@ -1703,7 +1729,8 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
 
                     static ML::Spinlock lock;
 
-                    if (auction->id.hash() % 1000 == 999 &&
+                    /* TODO: Incorporate this into doFilterStat("dynamic.notEnoughTime") below */
+                    if (auctionId.hash() % 1000 == 999 &&
                         lock.try_lock()) {
 
                         Date now = Date::now();
@@ -1801,8 +1828,14 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             float bestInFlightProp = bidders[0].inFlightProp;
 
             if (bestInFlightProp == PotentialBidder::NULL_PROP) {
-                // Excluded because too many in flight
-                //cerr << "TOO MANY IN FLIGHT" << endl;
+                // TODO: Capture GroupPotentialBidders.name for output here, currently transient as:
+                //       std::map<string, GroupPotentialBidders> groupAgents
+                if (traceBidMessages)
+                    cerr << "auction=" << auctionId
+                         << ", bidding=filter"
+                         << ", bidderGroupBidderCount=" << bidders.size()
+                         << ", reason=dynamic.tooManyInFlight"
+                         << endl;
                 continue;
             }
 
@@ -1818,14 +1851,21 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             // Best one is the first one
             PotentialBidder & winner = bidders[best];
             string agent = winner.agent;
+            const AgentConfig & winnerConfig = * winner.config;
 
             if (!agents.count(agent)) {
-                //cerr << "!!!AGENT IS GONE" << endl;
+                if (traceBidMessages)
+                    cerr << "auction=" << auctionId
+                         << ", bidding=missingAgent"
+                         << ", bidder=" << agent
+                         << endl;
                 continue;  // agent is gone
             }
-            AgentInfo & info = agents[agent];
+            AgentInfo & winnerInfo = agents[agent];
+            AgentStats & winnerStats = * winnerInfo.stats;
+            const AgentStatus & winnerStatus = * winnerInfo.status;
 
-            ++info.stats->auctions;
+            ++winnerStats.auctions;
 
             Json::Value aggregatedAug;
             for (const auto& aug : augList) {
@@ -1835,6 +1875,55 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             auction->agentAugmentations[agent] = chomp(aggregatedAug.toString());
 
             //auctionInfo.activities.push_back("sent to " + agent);
+            if (traceBidMessages)
+                cerr << "auction=" << auctionId
+                     << ", bidding=selectedBidder"
+                     << ", bidder=" << agent
+                     << ", bidderThrottleProbability=" << winnerInfo.throttleProbability
+                     << ", bidderProp=" << winner.inFlightProp
+                     << ", biddableSpotCount=" << winner.imp.size()
+                     << ", account=" << winnerConfig.account.toString('.')
+                     << ", externalAccount=" << winnerConfig.externalId
+                     << ", testConfig=" << boolalpha << winnerConfig.test << noboolalpha
+                     << ", bidderBidsInFlight=" << winnerStatus.numBidsInFlight
+                     << ", bidderAuctions=" << winnerStats.auctions
+                     << ", bidderBids=" << winnerStats.bids
+                     << ", bidderWins=" << winnerStats.wins
+                     << ", bidderLosses=" << winnerStats.losses
+                     << ", bidderTooLate=" << winnerStats.tooLate
+                     << ", bidderInvalid=" << winnerStats.invalid
+                     << ", bidderNoBudget=" << winnerStats.noBudget
+                     << ", bidderTooManyInFlight=" << winnerStats.tooManyInFlight
+                     << ", bidderNoSpots=" << winnerStats.noSpots
+                     << ", bidderSkippedBidProbability=" << winnerStats.skippedBidProbability
+                     << ", bidderUrlFiltered=" << winnerStats.urlFiltered
+                     << ", bidderHourOfWeekFiltered=" << winnerStats.hourOfWeekFiltered
+                     << ", bidderLocationFiltered=" << winnerStats.locationFiltered
+                     << ", bidderLanguageFiltered=" << winnerStats.languageFiltered
+                     << ", bidderUserPartitionFiltered=" << winnerStats.userPartitionFiltered
+                     << ", bidderDataProfileFiltered=" << winnerStats.dataProfileFiltered
+                     << ", bidderExchangeFiltered=" << winnerStats.exchangeFiltered
+                     << ", bidderSegmentsMissing=" << winnerStats.segmentsMissing
+                     << ", bidderSegmentsFiltered=" << winnerStats.segmentFiltered
+                     << ", bidderAugmentationTagsExcluded=" << winnerStats.augmentationTagsExcluded
+                     << ", bidderUserBlacklisted=" << winnerStats.userBlacklisted
+                     << ", bidderNotEnoughTime=" << winnerStats.notEnoughTime
+                     << ", bidderRequiredIdMissing=" << winnerStats.requiredIdMissing
+                     << ", bidderIntoFilters=" << winnerStats.intoFilters
+                     << ", bidderPassedStaticFilters=" << winnerStats.passedStaticFilters
+                     << ", bidderPassedDynamicFilters=" << winnerStats.passedDynamicFilters
+                     << ", bidderBidErrors=" << winnerStats.bidErrors
+                     << ", bidderTotalBidUSD=" << winnerStats.totalBid.getAvailable(CurrencyCode::CC_USD).value
+                     << ", bidderTotalBidOnWinsUSD=" << winnerStats.totalBidOnWins.getAvailable(CurrencyCode::CC_USD).value
+                     << ", bidderTotalSpentUSD=" << winnerStats.totalSpent.getAvailable(CurrencyCode::CC_USD).value
+                     << ", bidderFilter1Excluded=" << winnerStats.filter1Excluded
+                     << ", bidderFilter2Excluded=" << winnerStats.filter2Excluded
+                     << ", bidderFilterNExcluded=" << winnerStats.filternExcluded
+                     << ", bidderUnknownWins=" << winnerStats.unknownWins
+                     << ", bidderUnknownLosses=" << winnerStats.unknownLosses
+                     << ", bidderRequiredAugmentorMissing=" << winnerStats.requiredAugmentorIsMissing
+                     << ", bidderAugmentorValueNull=" << winnerStats.augmentorValueIsNull
+                     << endl;
 
             BidInfo bidInfo;
             bidInfo.agentConfig = winner.config;
@@ -1842,7 +1931,7 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             bidInfo.imp = winner.imp;
 
             auctionInfo.bidders.insert(make_pair(agent, std::move(bidInfo)));  // create empty bid response
-            if (!info.trackBidInFlight(auctionId, bidInfo.bidTime))
+            if (!winnerInfo.trackBidInFlight(auctionId, bidInfo.bidTime))
                 throwException("doStartBidding.agentAlreadyBidding",
                                "agent %s is already processing auction %s",
                                agent.c_str(),
@@ -1858,8 +1947,8 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
                              "AUCTION",
                              auction->start,
                              auctionId,
-                             info.getBidRequestEncoding(*auction),
-                             info.encodeBidRequest(*auction),
+                             winnerInfo.getBidRequestEncoding(*auction),
+                             winnerInfo.encodeBidRequest(*auction),
                              winner.imp.toJsonStr(),
                              toString(timeLeftMs),
                              auction->agentAugmentations[agent],
@@ -1868,13 +1957,15 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             //cerr << "done" << endl;
         }
 
-        //cerr << " auction " << id << " with "
-        //     << auctionInfo.bidders.size() << " bidders" << endl;
+        if (traceBidMessages)
+            cerr << "auction=" << auctionId << ", bidderCount=" << auctionInfo.bidders.size() << endl;
 
         //auctionInfo.activities.push_back(ML::format("total of %zd agents",
         //                                 auctionInfo.bidders.size()));
         if (auction->tooLate()) {
             recordHit("tooLateAfterRouting");
+            if (traceBidMessages)
+                cerr << "auction=" << auctionId << ", bidding=tooLateAfterRouting" << endl;
             // Unwind everything?
         }
 
@@ -1882,10 +1973,15 @@ doStartBidding(const std::shared_ptr<AugmentationInfo> & augInfo)
             /* No bidders; don't bother with the bid */
             ML::atomic_inc(numNoBidders);
             inFlight.erase(auctionId);
-            //cerr << fName << "About to call finish " << endl;
+            if (traceBidMessages)
+                cerr << "auction=" << auctionId << ", bidding=finish" << endl;
             if (!auction->finish()) {
                 recordHit("tooLateToFinish");
-                //cerr << "couldn't finish auction 1 " << auction->id << endl;
+                if (traceBidMessages)
+                    cerr << "auction=" << auctionId
+                         << ", bidding=tooLateToFinish"
+                         << ", auctionFinish=tooLate"
+                         << endl;
             }
         }
 
