@@ -74,9 +74,9 @@ struct AllAgentInfo : public std::vector<AgentInfoEntry> {
 /*****************************************************************************/
 
 struct AuctionDebugInfo {
-    void addAuctionEvent(const Date & date, const std::string & type,
+    void addAuctionEvent(Date date, const std::string & type,
                          const std::vector<std::string> & args);
-    void addSpotEvent(const Id & spotId, const Date & date, const std::string & type,
+    void addSpotEvent(const Id & spotId, Date date, const std::string & type,
                       const std::vector<std::string> & args);
     void dumpAuction() const;
     void dumpSpot(const Id & spotId) const;

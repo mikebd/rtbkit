@@ -60,7 +60,7 @@ toJson() const
 
 void
 AuctionDebugInfo::
-addAuctionEvent(const Date & timestamp, const std::string & type,
+addAuctionEvent(const Date timestamp, const std::string & type,
                 const std::vector<std::string> & args)
 {
     Message message;
@@ -72,7 +72,7 @@ addAuctionEvent(const Date & timestamp, const std::string & type,
 
 void
 AuctionDebugInfo::
-addSpotEvent(const Id & spotId, const Date & timestamp, const std::string & type,
+addSpotEvent(const Id & spotId, const Date timestamp, const std::string & type,
              const std::vector<std::string> & args)
 {
     Message message;
